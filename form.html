@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Input Kerja Sama — Monitoring Kerja Sama</title>
+<style>
+  :root { --teal:#0d9488; --teal-d:#0f766e; --bg:#f1f5f9; --line:#e2e8f0; --txt:#1e293b; --muted:#64748b; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--txt); }
+  header { background:linear-gradient(135deg,var(--teal),var(--teal-d)); color:#fff; padding:20px 16px; }
+  header .wrap { max-width:760px; margin:auto; }
+  header h1 { margin:0; font-size:20px; }
+  header p { margin:4px 0 0; opacity:.9; font-size:13px; }
+  .container { max-width:760px; margin:18px auto 60px; padding:0 16px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:20px; margin-bottom:16px; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+  .mode { display:flex; gap:10px; margin-bottom:6px; }
+  .mode button { flex:1; padding:14px; border:2px solid var(--line); background:#fff; border-radius:10px; cursor:pointer; font-size:14px; font-weight:600; color:var(--muted); transition:.15s; }
+  .mode button.active { border-color:var(--teal); background:#f0fdfa; color:var(--teal-d); }
+  .mode small { display:block; font-weight:400; font-size:11px; margin-top:3px; }
+  label { display:block; font-size:13px; font-weight:600; margin:14px 0 5px; }
+  label .req { color:#dc2626; }
+  input,select,textarea { width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px; font-size:14px; font-family:inherit; background:#fff; }
+  input:focus,select:focus,textarea:focus { outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(13,148,136,.12); }
+  .row { display:flex; gap:12px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:180px; }
+  .hint { font-size:11px; color:var(--muted); margin-top:4px; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .chip { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid var(--line); border-radius:20px; font-size:13px; cursor:pointer; background:#fff; }
+  .chip.on { background:var(--teal); color:#fff; border-color:var(--teal); }
+  .new-inline { display:none; margin-top:8px; }
+  .new-inline.show { display:block; }
+  .btn { background:var(--teal); color:#fff; border:none; padding:13px 20px; border-radius:9px; font-size:15px; font-weight:600; cursor:pointer; width:100%; }
+  .btn:hover { background:var(--teal-d); }
+  .btn:disabled { opacity:.6; cursor:not-allowed; }
+  .section-title { font-size:13px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin:4px 0 0; font-weight:700; }
+  .msg { padding:12px 14px; border-radius:8px; margin-bottom:14px; font-size:14px; display:none; }
+  .msg.ok { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; display:block; }
+  .msg.err { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; display:block; }
+  .topbar { max-width:760px; margin:auto; display:flex; justify-content:space-between; align-items:center; }
+  .topbar a { color:#fff; text-decoration:none; font-size:13px; opacity:.9; }
+  .readonly-note { background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:10px 12px; border-radius:8px; font-size:12px; margin-top:10px; }
+  .spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+<header>
+  <div class="topbar">
+    <div></div>
+    <a href="index.html">📊 Dashboard →</a>
+  </div>
+  <div class="wrap">
+    <h1>Input Kerja Sama</h1>
+    <p id="instansi">Sistem Monitoring Masa Berlaku Kerja Sama</p>
+  </div>
+</header>
+
+<div class="container">
+  <div id="msg" class="msg"></div>
+
+  <div class="card">
+    <p class="section-title">Jenis Pengisian</p>
+    <div class="mode">
+      <button type="button" id="modeBaru" class="active" onclick="setMode('Baru')">
+        ➕ Kerja Sama Baru<small>Mitra/kesepakatan baru</small>
+      </button>
+      <button type="button" id="modePerpanjangan" onclick="setMode('Perpanjangan')">
+        🔄 Perpanjangan<small>Mitra yang sudah ada</small>
+      </button>
+    </div>
+    <div id="perpanjanganBox" style="display:none">
+      <label>Pilih Mitra yang Diperpanjang <span class="req">*</span></label>
+      <select id="mitraSelect" onchange="prefillMitra()"><option value="">— pilih mitra —</option></select>
+      <div class="readonly-note">Saat perpanjangan: <b>Nama & Jenis Mitra tetap</b>. Isi ulang nomor surat, bentuk, biaya, masa berlaku, dan tanggal sesuai dokumen baru.</div>
+    </div>
+  </div>
+
+  <form id="form">
+    <!-- DATA MITRA -->
+    <div class="card">
+      <p class="section-title">Data Mitra</p>
+      <label>Nama Mitra Kerja Sama <span class="req">*</span></label>
+      <input id="namaMitra" required placeholder="mis. RSUD Palembang BARI" oninput="checkDup()" />
+      <div class="hint">Nama lengkap & konsisten — ini kunci pencatatan riwayat.</div>
+      <div id="mitraSuggest" style="font-size:12px;color:#92400e;margin-top:6px"></div>
+
+      <div class="row">
+        <div>
+          <label>Jenis Mitra <span class="req">*</span></label>
+          <select id="jenisMitra" data-cat="Jenis Mitra" onchange="checkNew(this,'jenisMitraNew')" required></select>
+          <input class="new-inline" id="jenisMitraNew" placeholder="Tulis jenis mitra baru…" />
+        </div>
+        <div>
+          <label>Wilayah / Provinsi</label>
+          <input id="wilayah" placeholder="mis. Sumatera Selatan" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div><label>Nama PIC Mitra</label><input id="picNama" placeholder="Narahubung di mitra" /></div>
+        <div><label>Email PIC</label><input id="picEmail" type="email" placeholder="email@mitra.go.id" /></div>
+        <div><label>No. HP PIC</label><input id="picHp" placeholder="08xxxx" /></div>
+      </div>
+      <div class="hint">PIC dipakai untuk konfirmasi sebelum perpanjangan. Opsional.</div>
+    </div>
+
+    <!-- DATA KERJA SAMA -->
+    <div class="card">
+      <p class="section-title">Data Kerja Sama (Dokumen)</p>
+
+      <div class="row">
+        <div>
+          <label>Bentuk Kerja Sama <span class="req">*</span></label>
+          <select id="bentuk" data-cat="Bentuk Kerja Sama" onchange="checkNew(this,'bentukNew')" required></select>
+          <input class="new-inline" id="bentukNew" placeholder="Tulis bentuk baru…" />
+        </div>
+        <div>
+          <label>Nomor Surat <span class="req">*</span></label>
+          <input id="nomorSurat" required placeholder="HK.03.01/…" />
+        </div>
+      </div>
+
+      <label>Dokumen Induk / Payung MoU <span class="hint">(opsional — jika dokumen ini turunan dari MoU mitra yang sama)</span></label>
+      <select id="dokumenInduk"><option value="">— tidak ada / dokumen ini berdiri sendiri —</option></select>
+      <div class="hint" id="indukHint">Akan terisi otomatis dengan daftar dokumen mitra setelah mitra dikenali.</div>
+
+      <label>Ruang Lingkup <span class="req">*</span> <span class="hint">(boleh lebih dari satu)</span></label>
+      <div class="chips" id="ruangChips"></div>
+      <div class="new-inline show" style="margin-top:8px">
+        <input id="ruangNew" placeholder="+ Tambah ruang lingkup baru, tekan Enter" onkeydown="addRuangNew(event)" />
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Pengguna MoU/PKS <span class="req">*</span></label>
+          <select id="pengguna" data-cat="Pengguna MoU/PKS" onchange="checkNew(this,'penggunaNew')" required></select>
+          <input class="new-inline" id="penggunaNew" placeholder="Tulis pengguna/unit baru…" />
+        </div>
+        <div>
+          <label>Jabatan Penandatangan Mitra <span class="req">*</span></label>
+          <input id="jabatan" required placeholder="mis. Direktur RS" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div><label>Biaya MoU/PKS (Rp)</label><input id="biaya" type="number" min="0" placeholder="0" /></div>
+        <div>
+          <label>Masa Berlaku (tahun) <span class="req">*</span></label>
+          <select id="masaBerlaku" required onchange="hitungBerakhir()">
+            <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Tanggal Mulai <span class="req">*</span></label>
+          <input id="tanggalMulai" type="date" required onchange="hitungBerakhir()" />
+        </div>
+        <div>
+          <label>Tanggal Berakhir <span class="hint">(otomatis, bisa disesuaikan)</span></label>
+          <input id="tanggalBerakhir" type="date" />
+        </div>
+      </div>
+
+      <label>Lampiran File MoU/PKS (PDF/gambar)</label>
+      <input id="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+      <div class="hint">Tersimpan di Google Drive & ditautkan ke baris ini. Maks ±10 MB.</div>
+
+      <label>Catatan</label>
+      <textarea id="catatan" rows="2" placeholder="Info tambahan (mis. status negosiasi)…"></textarea>
+    </div>
+
+    <button type="submit" class="btn" id="submitBtn">💾 Simpan Kerja Sama</button>
+  </form>
+</div>
+
+<script>
+  const GAS_URL = "__GAS_URL__";
+  let DATA = { dataset:{}, mitra:[] };
+  let MODE = 'Baru';
+  const ruangSelected = new Set();
+
+  function show(type, text){ const m=document.getElementById('msg'); m.className='msg '+type; m.innerHTML=text; window.scrollTo({top:0,behavior:'smooth'}); }
+
+  async function load(){
+    try{
+      const r = await fetch(GAS_URL + '?action=getFormData');
+      DATA = await r.json();
+      if(DATA.instansi) document.getElementById('instansi').textContent = DATA.instansi;
+      fillSelect('jenisMitra', DATA.dataset['Jenis Mitra']);
+      fillSelect('bentuk', DATA.dataset['Bentuk Kerja Sama']);
+      fillSelect('pengguna', DATA.dataset['Pengguna MoU/PKS']);
+      fillRuang(DATA.dataset['Ruang Lingkup']||[]);
+      fillMitra();
+    }catch(e){ show('err','Gagal memuat data dropdown: '+e.message+'. Cek GAS_URL.'); }
+  }
+
+  function fillSelect(id, arr){
+    const sel = document.getElementById(id);
+    sel.innerHTML = '<option value="">— pilih —</option>';
+    (arr||[]).forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
+    const o2=document.createElement('option'); o2.value='__NEW__'; o2.textContent='+ Tambah baru…'; sel.appendChild(o2);
+  }
+  function fillRuang(arr){
+    const box=document.getElementById('ruangChips'); box.innerHTML='';
+    arr.forEach(v=>addRuangChip(v));
+  }
+  function addRuangChip(v){
+    const box=document.getElementById('ruangChips');
+    if([...box.children].some(c=>c.dataset.v===v)) return;
+    const c=document.createElement('div'); c.className='chip'; c.dataset.v=v; c.textContent=v;
+    c.onclick=()=>{ if(ruangSelected.has(v)){ruangSelected.delete(v);c.classList.remove('on');} else {ruangSelected.add(v);c.classList.add('on');} };
+    box.appendChild(c);
+  }
+  function addRuangNew(e){
+    if(e.key!=='Enter') return; e.preventDefault();
+    const v=e.target.value.trim(); if(!v) return;
+    addRuangChip(v);
+    const c=[...document.getElementById('ruangChips').children].find(x=>x.dataset.v===v);
+    c.classList.add('on'); c.dataset.new='1'; ruangSelected.add(v); e.target.value='';
+  }
+  function fillMitra(){
+    const sel=document.getElementById('mitraSelect');
+    sel.innerHTML='<option value="">— pilih mitra —</option>';
+    (DATA.mitra||[]).slice().sort((a,b)=>String(a.nama).localeCompare(b.nama)).forEach(m=>{
+      const o=document.createElement('option'); o.value=m.id; o.textContent=m.nama+(m.jenis?' ('+m.jenis+')':''); sel.appendChild(o);
+    });
+  }
+
+  function setMode(m){
+    MODE=m;
+    document.getElementById('modeBaru').classList.toggle('active', m==='Baru');
+    document.getElementById('modePerpanjangan').classList.toggle('active', m==='Perpanjangan');
+    document.getElementById('perpanjanganBox').style.display = m==='Perpanjangan'?'block':'none';
+  }
+  function prefillMitra(){
+    const id=document.getElementById('mitraSelect').value;
+    const m=(DATA.mitra||[]).find(x=>x.id===id); if(!m) return;
+    document.getElementById('namaMitra').value=m.nama||'';
+    setSelect('jenisMitra', m.jenis||'');
+    document.getElementById('wilayah').value=m.wilayah||'';
+    document.getElementById('picNama').value=m.picNama||'';
+    document.getElementById('picEmail').value=m.picEmail||'';
+    document.getElementById('picHp').value=m.picHp||'';
+    document.getElementById('mitraSuggest').innerHTML='';
+    fillInduk(id);
+  }
+
+  function fillInduk(idMitra){
+    const sel=document.getElementById('dokumenInduk');
+    sel.innerHTML='<option value="">— tidak ada / dokumen ini berdiri sendiri —</option>';
+    const docs=(DATA.dokByMitra||{})[idMitra]||[];
+    docs.forEach(d=>{
+      const o=document.createElement('option'); o.value=d.id;
+      o.textContent=(d.bentuk||'Dokumen')+' — '+(d.nomor||d.id);
+      sel.appendChild(o);
+    });
+    document.getElementById('indukHint').textContent = docs.length
+      ? docs.length+' dokumen mitra ini tersedia sebagai induk.'
+      : 'Mitra ini belum punya dokumen lain.';
+  }
+
+  // ── Anti-duplikat: deteksi nama mirip dengan mitra yang sudah ada ──
+  function normNama(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+  function checkDup(){
+    const box=document.getElementById('mitraSuggest');
+    const v=document.getElementById('namaMitra').value.trim();
+    box.innerHTML='';
+    if(v.length<4) return;
+    const nv=normNama(v);
+    const match=(DATA.mitra||[]).filter(m=>{
+      const nm=normNama(m.nama); if(!nm||nm===nv) return false;
+      return nm.indexOf(nv)>-1 || nv.indexOf(nm)>-1;
+    }).slice(0,4);
+    if(match.length===0) return;
+    box.appendChild(document.createTextNode('⚠️ Mirip mitra yang sudah ada: '));
+    match.forEach((m,i)=>{
+      const a=document.createElement('a'); a.href='#'; a.textContent=m.nama; a.style.fontWeight='600';
+      a.onclick=(e)=>{ e.preventDefault(); useExisting(m.id); };
+      box.appendChild(a);
+      if(i<match.length-1) box.appendChild(document.createTextNode(' · '));
+    });
+    box.appendChild(document.createTextNode(' — klik untuk pakai data yang ada (hindari mitra ganda).'));
+  }
+  function useExisting(id){
+    setMode('Perpanjangan');
+    document.getElementById('mitraSelect').value=id;
+    prefillMitra();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function setSelect(id,val){
+    const sel=document.getElementById(id);
+    if(val && ![...sel.options].some(o=>o.value===val)){ const o=document.createElement('option'); o.value=val;o.textContent=val; sel.insertBefore(o, sel.lastChild); }
+    sel.value=val;
+  }
+  function checkNew(sel, newId){
+    const box=document.getElementById(newId);
+    if(sel.value==='__NEW__'){ box.classList.add('show'); box.required=true; }
+    else { box.classList.remove('show'); box.value=''; }
+  }
+
+  function hitungBerakhir(){
+    const mulai=document.getElementById('tanggalMulai').value;
+    const masa=parseInt(document.getElementById('masaBerlaku').value,10);
+    const tb=document.getElementById('tanggalBerakhir');
+    if(mulai && masa){
+      const d=new Date(mulai); d.setFullYear(d.getFullYear()+masa); d.setDate(d.getDate()-1);
+      tb.value=d.toISOString().slice(0,10);
+    }
+  }
+
+  function valSelect(id, newId, cat, out){
+    const sel=document.getElementById(id);
+    if(sel.value==='__NEW__'){ const v=document.getElementById(newId).value.trim(); out.val=v; out.isNew=true; return v; }
+    out.val=sel.value; out.isNew=false; return sel.value;
+  }
+
+  function readFile(input){
+    return new Promise((res)=>{
+      const f=input.files[0]; if(!f){res(null);return;}
+      const rd=new FileReader();
+      rd.onload=()=>res({ name:f.name, mime:f.type, data:rd.result });
+      rd.onerror=()=>res(null);
+      rd.readAsDataURL(f);
+    });
+  }
+
+  document.getElementById('form').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const btn=document.getElementById('submitBtn');
+    const jm={}, bk={}, pg={};
+    const jenisMitra=valSelect('jenisMitra','jenisMitraNew','Jenis Mitra',jm);
+    const bentuk=valSelect('bentuk','bentukNew','Bentuk Kerja Sama',bk);
+    const pengguna=valSelect('pengguna','penggunaNew','Pengguna MoU/PKS',pg);
+    const ruang=[...ruangSelected];
+    const ruangNew = [...document.getElementById('ruangChips').children].some(c=>c.dataset.new && ruangSelected.has(c.dataset.v));
+
+    if(ruang.length===0){ show('err','Pilih minimal satu Ruang Lingkup.'); return; }
+    if(!jenisMitra||!bentuk||!pengguna){ show('err','Lengkapi Jenis Mitra, Bentuk, dan Pengguna.'); return; }
+
+    btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Menyimpan…';
+    const file=await readFile(document.getElementById('file'));
+
+    const payload={
+      action:'submitKerjasama', jenisEntri:MODE,
+      namaMitra:document.getElementById('namaMitra').value.trim(),
+      jenisMitra, jenisMitraBaru:jm.isNew, wilayah:document.getElementById('wilayah').value.trim(),
+      picNama:document.getElementById('picNama').value.trim(),
+      picEmail:document.getElementById('picEmail').value.trim(),
+      picHp:document.getElementById('picHp').value.trim(),
+      bentuk, bentukBaru:bk.isNew,
+      nomorSurat:document.getElementById('nomorSurat').value.trim(),
+      ruangLingkup:ruang.join(', '), ruangLingkupBaru:ruangNew,
+      pengguna, penggunaBaru:pg.isNew,
+      jabatan:document.getElementById('jabatan').value.trim(),
+      biaya:document.getElementById('biaya').value||0,
+      masaBerlaku:document.getElementById('masaBerlaku').value,
+      tanggalMulai:document.getElementById('tanggalMulai').value,
+      tanggalBerakhir:document.getElementById('tanggalBerakhir').value,
+      refSebelumnya: MODE==='Perpanjangan'?document.getElementById('mitraSelect').value:'',
+      dokumenInduk:document.getElementById('dokumenInduk').value,
+      catatan:document.getElementById('catatan').value.trim(),
+      file,
+    };
+
+    try{
+      const r=await fetch(GAS_URL,{ method:'POST', body:JSON.stringify(payload) });
+      const res=await r.json();
+      if(res.status==='success'){
+        show('ok','✅ Tersimpan! Berlaku s.d. <b>'+(res.tanggalBerakhir||'-')+'</b>. <a href="index.html">Lihat dashboard</a>');
+        document.getElementById('form').reset(); ruangSelected.clear();
+        [...document.getElementById('ruangChips').children].forEach(c=>c.classList.remove('on'));
+        await load();
+      } else { show('err','Gagal: '+(res.error||'tidak diketahui')); }
+    }catch(err){ show('err','Gagal mengirim: '+err.message); }
+    btn.disabled=false; btn.innerHTML='💾 Simpan Kerja Sama';
+  });
+
+  load();
+</script>
+</body>
+</html>

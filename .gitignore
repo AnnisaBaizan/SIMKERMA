@@ -1,0 +1,11 @@
+.env
+.env.local
+dist/
+node_modules/
+.DS_Store
+.vercel
+
+# Data asli & dokumen konteks — JANGAN di-push (berisi data mitra & chat pribadi)
+DAFTAR LENGKAP REKAPAN KERJA SAMA POLTEKKES PALEMBANG (TERUPDATE).xlsx
+Konteks.docx
+ini Googleform nya.docx

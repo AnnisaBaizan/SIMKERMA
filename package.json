@@ -1,0 +1,9 @@
+{
+  "name": "monitoring-kerjasama",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sistem Monitoring Masa Berlaku Kerja Sama — Poltekkes Kemenkes Palembang",
+  "scripts": {
+    "build": "node build.js"
+  }
+}
