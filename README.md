@@ -1,4 +1,11 @@
-# SIMONIK — Sistem Monitoring Masa Berlaku Kerja Sama
+# SIMKERMA — Sistem Monitoring Masa Berlaku Kerja Sama
+
+> 🌐 **Live:** https://simkerma.vercel.app · 📦 **Repo:** https://github.com/AnnisaBaizan/SIMKERMA
+>
+> ⚙️ **Status:** Frontend sudah ter-deploy. Saat ini `GAS_URL` masih **placeholder**, jadi
+> dashboard belum menarik data. Setelah Apps Script Web App di-deploy, ganti env `GAS_URL`
+> di Vercel dengan URL asli lalu redeploy (lihat §3E). Tab `Mitra`/`Kerjasama` di template
+> sudah berisi **data dummy** untuk uji coba dashboard.
 
 Aplikasi monitoring masa berlaku kerja sama (MoU/MoA/PKS) **Poltekkes Kemenkes Palembang**.
 Tujuan utama: **tidak ada lagi kerja sama yang lupa/terlewat diperpanjang.**
@@ -99,16 +106,27 @@ memungkinkan insight seperti "mitra paling lama" & "mitra dengan kerja sama terb
 3. **Rapikan manual** baris yang `Jenis Mitra = Lainnya` atau Nama Mitra masih berupa jenis
    (data lama memang campur — lihat catatan di §6).
 
-### E. Frontend (Vercel)
-1. `GAS_URL` di-inject ke HTML oleh `build.js`.
-2. Set Environment Variable di Vercel: **`GAS_URL`** (wajib), `ADMIN_PASSWORD`, `BUG_URL` (opsional).
-3. Deploy. Vercel menjalankan `node build.js` → output `dist/` berisi `index.html` & `form.html`.
+### E. Frontend (Vercel) — sudah ter-deploy
+Project Vercel **`simkerma`** sudah dibuat & ter-deploy ke https://simkerma.vercel.app
+(env `GAS_URL` saat ini masih placeholder).
 
-Lokal:
+Untuk mengaktifkan data asli setelah Apps Script Web App siap:
 ```bash
-cp .env.example .env      # isi GAS_URL
-export $(grep -v '^#' .env | xargs)   # atau set manual
-npm run build             # → dist/
+# ganti GAS_URL dengan URL Web App asli, lalu redeploy
+vercel env rm GAS_URL production -y
+printf "https://script.google.com/macros/s/XXXX/exec" | vercel env add GAS_URL production
+vercel deploy --prod
+```
+Atau lewat dashboard Vercel: **Project simkerma → Settings → Environment Variables → `GAS_URL`** → ubah → **Redeploy**.
+
+Build otomatis: Vercel menjalankan `node build.js` → meng-inject `GAS_URL` (juga `ADMIN_PASSWORD`,
+`BUG_URL` bila diisi) → output `dist/` berisi `index.html` & `form.html`.
+
+Build lokal:
+```bash
+cp .env.example .env                    # isi GAS_URL
+export $(grep -v '^#' .env | xargs)
+npm run build                           # → dist/
 ```
 
 ---
@@ -135,7 +153,7 @@ npm run build             # → dist/
 |-------|---------|-----------|
 | `NAMA_INSTANSI` | Politeknik Kesehatan Kemenkes Palembang | Nama di notifikasi |
 | `EMAIL_NOTIF` | lukman@, kerjasama@, okta@ …ac.id | Penerima reminder (pisah koma) |
-| `BASE_URL` | https://monitoring-kerjasama.vercel.app | Domain aplikasi |
+| `BASE_URL` | https://simkerma.vercel.app | Domain aplikasi |
 | `REMINDER_HARI` | `90,60,30,7,0` | Ambang H- (hari). `0` = hari berakhir |
 | `EMAIL_AKTIF` | TRUE | Aktifkan email |
 | `WA_AKTIF` | FALSE | Aktifkan WhatsApp (butuh `WA_TOKEN` di CONFIG + `WA_TARGET`) |
