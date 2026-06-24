@@ -187,7 +187,7 @@ function _getOrCreateSheet(name, headers) {
   if (!sheet) {
     sheet = ss.insertSheet(name);
     sheet.appendRow(headers);
-    sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#0d9488').setFontColor('#ffffff');
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#6d28d9').setFontColor('#ffffff');
     sheet.setFrozenRows(1);
   } else if (sheet.getLastRow() === 0) {
     sheet.appendRow(headers);
@@ -215,7 +215,7 @@ function _datasetSheet() {
   if (!sheet) {
     sheet = ss.insertSheet(CONFIG.DATASET_SHEET);
     sheet.appendRow(HEADERS_DATASET);
-    sheet.getRange(1, 1, 1, 2).setFontWeight('bold').setBackground('#0d9488').setFontColor('#ffffff');
+    sheet.getRange(1, 1, 1, 2).setFontWeight('bold').setBackground('#6d28d9').setFontColor('#ffffff');
     sheet.setFrozenRows(1);
     DATASET_KATEGORI.forEach(kat => (DATASET_SEED[kat] || []).forEach(v => sheet.appendRow([kat, v])));
   }
@@ -581,7 +581,7 @@ function _kirimEmailReminder(items, s) {
 
   let rowsHtml = '';
   items.forEach((j, i) => {
-    const warna = j.sisa <= 0 ? '#dc2626' : j.sisa <= 7 ? '#ea580c' : j.sisa <= 30 ? '#d97706' : '#0d9488';
+    const warna = j.sisa <= 0 ? '#dc2626' : j.sisa <= 7 ? '#ea580c' : j.sisa <= 30 ? '#d97706' : '#6d28d9';
     const ket = j.sisa <= 0 ? 'BERAKHIR HARI INI' : 'sisa ' + j.sisa + ' hari';
     rowsHtml += '<tr>' +
       '<td style="padding:8px;border-bottom:1px solid #eee">' + (i + 1) + '</td>' +
@@ -596,7 +596,7 @@ function _kirimEmailReminder(items, s) {
 
   const html =
     '<div style="font-family:Arial,sans-serif;max-width:760px;margin:auto">' +
-    '<div style="background:#0d9488;color:#fff;padding:16px 20px;border-radius:8px 8px 0 0">' +
+    '<div style="background:#6d28d9;color:#fff;padding:16px 20px;border-radius:8px 8px 0 0">' +
     '<h2 style="margin:0">Monitoring Masa Berlaku Kerja Sama</h2>' +
     '<div style="opacity:.9;font-size:13px">' + _esc(s.NAMA_INSTANSI) + '</div></div>' +
     '<div style="border:1px solid #e5e7eb;border-top:none;padding:20px;border-radius:0 0 8px 8px">' +
@@ -607,7 +607,7 @@ function _kirimEmailReminder(items, s) {
     '<th style="padding:8px">#</th><th style="padding:8px">Mitra</th><th style="padding:8px">Bentuk / No. Surat</th>' +
     '<th style="padding:8px">Pengguna</th><th style="padding:8px">Berakhir</th><th style="padding:8px">Status</th><th style="padding:8px">Berkas</th>' +
     '</tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
-    '<p style="margin-top:18px"><a href="' + s.BASE_URL + '" style="background:#0d9488;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none">Buka Dashboard</a></p>' +
+    '<p style="margin-top:18px"><a href="' + s.BASE_URL + '" style="background:#6d28d9;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none">Buka Dashboard</a></p>' +
     '<p style="color:#94a3b8;font-size:12px;margin-top:16px">Email otomatis dari Sistem Monitoring Kerja Sama. Mohon tidak membalas email ini.</p>' +
     '</div></div>';
 

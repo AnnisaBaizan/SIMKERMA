@@ -6,11 +6,11 @@
 <title>Dashboard — Monitoring Masa Berlaku Kerja Sama</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
-  :root { --teal:#0d9488; --teal-d:#0f766e; --bg:#f1f5f9; --line:#e2e8f0; --txt:#1e293b; --muted:#64748b;
+  :root { --teal:#6d28d9; --teal-d:#5b21b6; --bg:#f1f5f9; --line:#e2e8f0; --txt:#1e293b; --muted:#64748b;
           --red:#dc2626; --amber:#d97706; --green:#16a34a; }
   * { box-sizing:border-box; }
   body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--txt); }
-  header { background:linear-gradient(135deg,var(--teal),var(--teal-d)); color:#fff; padding:18px 16px; }
+  header { background:linear-gradient(135deg,#6366f1,#7c3aed); color:#fff; padding:18px 16px; }
   .wrap { max-width:1180px; margin:auto; }
   header .top { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
   header h1 { margin:0; font-size:20px; }
@@ -105,7 +105,7 @@
 <script>
   const GAS_URL = "__GAS_URL__";
   let DASH=null, charts={};
-  const PALET = ['#0d9488','#0ea5e9','#6366f1','#f59e0b','#ef4444','#10b981','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16','#06b6d4'];
+  const PALET = ['#7c3aed','#6366f1','#0ea5e9','#f59e0b','#ef4444','#10b981','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16','#06b6d4'];
 
   function rupiah(n){ return 'Rp ' + (Number(n)||0).toLocaleString('id-ID'); }
 
@@ -187,8 +187,8 @@
     const ctx=document.getElementById(id); const keys=Object.keys(obj||{}); const vals=keys.map(k=>obj[k]);
     charts[id]=new Chart(ctx,{ type: line?'line':'bar',
       data:{ labels:keys, datasets:[{ label:label||'Jumlah', data:vals,
-        backgroundColor: line?'rgba(13,148,136,.15)':keys.map((_,i)=>PALET[i%PALET.length]),
-        borderColor:'#0d9488', borderWidth:line?2:0, fill:!!line, tension:.3 }] },
+        backgroundColor: line?'rgba(124,58,237,.15)':keys.map((_,i)=>PALET[i%PALET.length]),
+        borderColor:'#7c3aed', borderWidth:line?2:0, fill:!!line, tension:.3 }] },
       options:{ responsive:true, plugins:{legend:{display:false}},
         scales:{ y:{ beginAtZero:true, ticks:{precision:0} } } } });
   }
