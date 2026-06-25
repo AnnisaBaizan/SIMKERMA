@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Input Kerja Sama — Monitoring Kerja Sama</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%236d28d9'/%3E%3Ctext x='16' y='23' font-size='19' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'%3ES%3C/text%3E%3C/svg%3E" />
 <style>
   :root { --teal:#6d28d9; --teal-d:#5b21b6; --bg:#f1f5f9; --line:#e2e8f0; --txt:#1e293b; --muted:#64748b; }
   * { box-sizing: border-box; }
@@ -172,8 +173,14 @@
       <textarea id="catatan" rows="2" placeholder="Info tambahan (mis. status negosiasi)…"></textarea>
     </div>
 
-    <button type="submit" class="btn" id="submitBtn">💾 Simpan Kerja Sama</button>
+    <button type="submit" class="btn" id="submitBtn" disabled>⏳ Memuat data…</button>
   </form>
+</div>
+
+<div id="overlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:999;align-items:center;justify-content:center;flex-direction:column;color:#fff;text-align:center;padding:20px">
+  <div class="spinner" style="width:44px;height:44px;border-width:4px;border-color:rgba(255,255,255,.35);border-top-color:#fff"></div>
+  <div id="overlayText" style="margin-top:16px;font-size:15px;font-weight:700">Mengirim data…</div>
+  <div style="font-size:12px;opacity:.85;margin-top:5px">Mohon tunggu, jangan tutup atau muat ulang halaman.</div>
 </div>
 
 <script>
@@ -183,18 +190,25 @@
   const ruangSelected = new Set();
 
   function show(type, text){ const m=document.getElementById('msg'); m.className='msg '+type; m.innerHTML=text; window.scrollTo({top:0,behavior:'smooth'}); }
+  function overlay(on, text){ const o=document.getElementById('overlay'); if(text) document.getElementById('overlayText').textContent=text; o.style.display=on?'flex':'none'; }
+  function setReady(ready){ const b=document.getElementById('submitBtn'); b.disabled=!ready; b.innerHTML=ready?'💾 Simpan Kerja Sama':'⏳ Memuat data…'; }
 
   async function load(){
     try{
       const r = await fetch(GAS_URL + '?action=getFormData');
       DATA = await r.json();
+      if(DATA.error) throw new Error(DATA.error);
       if(DATA.instansi) document.getElementById('instansi').textContent = DATA.instansi;
       fillSelect('jenisMitra', DATA.dataset['Jenis Mitra']);
       fillSelect('bentuk', DATA.dataset['Bentuk Kerja Sama']);
       fillSelect('pengguna', DATA.dataset['Pengguna MoU/PKS']);
       fillRuang(DATA.dataset['Ruang Lingkup']||[]);
       fillMitra();
-    }catch(e){ show('err','Gagal memuat data dropdown: '+e.message+'. Cek GAS_URL.'); }
+      setReady(true);
+    }catch(e){
+      setReady(false);
+      show('err','Gagal memuat data: '+e.message+'. Pastikan GAS_URL benar & Web App ter-deploy. <a href="#" onclick="location.reload();return false;">Muat ulang</a>');
+    }
   }
 
   function fillSelect(id, arr){
@@ -340,8 +354,16 @@
     if(ruang.length===0){ show('err','Pilih minimal satu Ruang Lingkup.'); return; }
     if(!jenisMitra||!bentuk||!pengguna){ show('err','Lengkapi Jenis Mitra, Bentuk, dan Pengguna.'); return; }
 
-    btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Menyimpan…';
-    const file=await readFile(document.getElementById('file'));
+    const fileInput=document.getElementById('file');
+    const theFile=fileInput.files[0];
+    if(theFile && theFile.size > 10*1024*1024){
+      show('err','Ukuran berkas '+(theFile.size/1048576).toFixed(1)+' MB melebihi batas 10 MB. Mohon kompres dulu.');
+      return;
+    }
+
+    btn.disabled=true;
+    overlay(true, theFile ? 'Mengunggah berkas & menyimpan…' : 'Mengirim data…');
+    const file=await readFile(fileInput);
 
     const payload={
       action:'submitKerjasama', jenisEntri:MODE,
@@ -369,13 +391,16 @@
       const r=await fetch(GAS_URL,{ method:'POST', body:JSON.stringify(payload) });
       const res=await r.json();
       if(res.status==='success'){
+        overlay(false);
         show('ok','✅ Tersimpan! Berlaku s.d. <b>'+(res.tanggalBerakhir||'-')+'</b>. <a href="index.html">Lihat dashboard</a>');
         document.getElementById('form').reset(); ruangSelected.clear();
         [...document.getElementById('ruangChips').children].forEach(c=>c.classList.remove('on'));
+        document.getElementById('mitraSuggest').innerHTML='';
+        setMode('Baru');
         await load();
-      } else { show('err','Gagal: '+(res.error||'tidak diketahui')); }
-    }catch(err){ show('err','Gagal mengirim: '+err.message); }
-    btn.disabled=false; btn.innerHTML='💾 Simpan Kerja Sama';
+      } else { overlay(false); show('err','Gagal: '+(res.error||'tidak diketahui')); }
+    }catch(err){ overlay(false); show('err','Gagal mengirim: '+err.message); }
+    finally{ overlay(false); btn.disabled=false; btn.innerHTML='💾 Simpan Kerja Sama'; }
   });
 
   load();

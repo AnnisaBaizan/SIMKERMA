@@ -381,7 +381,12 @@ function _parseDate(v) {
   return isNaN(d.getTime()) ? null : d;
 }
 
-function _today() { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); }
+// "Hari ini" dihitung pada zona WIB (GMT+7) agar konsisten dengan tanggal di Sheet,
+// tidak tergantung zona waktu default project Apps Script.
+function _today() {
+  const s = Utilities.formatDate(new Date(), 'GMT+7', 'yyyy-MM-dd').split('-');
+  return new Date(Number(s[0]), Number(s[1]) - 1, Number(s[2]));
+}
 
 function _hitungStatus(berakhir) {
   if (!berakhir) return { status: 'Tidak Ada Tanggal', sisa: '' };
@@ -539,15 +544,16 @@ function cekDanKirimReminder(manual) {
     sheet.getRange(rowNo, colSisa).setValue(sisa);
     sheet.getRange(rowNo, colStatus).setValue(status);
 
-    if (sisa < 0) return; // sudah habis — diingatkan terakhir saat sisa=0
-    // tentukan bucket ambang terkecil yang >= sisa
-    let bucket = null;
-    for (let a = 0; a < ambang.length; a++) { if (sisa <= ambang[a]) { bucket = ambang[a]; break; } }
-    if (bucket === null) return;
-
-    const tag = 'H-' + bucket;
-    const last = String(r[colRem - 1] || '');
-    if (last.indexOf(tag) === 0) return; // sudah dikirim utk bucket ini
+    // Tentukan tahap pengingat (idempoten: 1x per tahap)
+    let tag = null;
+    if (sisa < 0) {
+      if (sisa >= -7) tag = 'HABIS';   // baru habis (≤7 hari lalu) → ingatkan sekali
+    } else {
+      for (let a = 0; a < ambang.length; a++) { if (sisa <= ambang[a]) { tag = 'H-' + ambang[a]; break; } }
+    }
+    if (!tag) return;
+    const last = String(r[colRem - 1] || '').split(' ')[0];
+    if (last === tag) return; // tahap ini sudah dikirim → jangan dobel
 
     jatuhTempo.push({
       rowNo, tag, sisa, status,
@@ -582,7 +588,8 @@ function _kirimEmailReminder(items, s) {
   let rowsHtml = '';
   items.forEach((j, i) => {
     const warna = j.sisa <= 0 ? '#dc2626' : j.sisa <= 7 ? '#ea580c' : j.sisa <= 30 ? '#d97706' : '#6d28d9';
-    const ket = j.sisa <= 0 ? 'BERAKHIR HARI INI' : 'sisa ' + j.sisa + ' hari';
+    const ket = j.sisa < 0 ? 'SUDAH HABIS (' + Math.abs(j.sisa) + ' hr lalu)'
+      : j.sisa === 0 ? 'BERAKHIR HARI INI' : 'sisa ' + j.sisa + ' hari';
     rowsHtml += '<tr>' +
       '<td style="padding:8px;border-bottom:1px solid #eee">' + (i + 1) + '</td>' +
       '<td style="padding:8px;border-bottom:1px solid #eee"><b>' + _esc(j.nama) + '</b><br><span style="color:#666;font-size:12px">' + _esc(j.jenis) + '</span></td>' +
@@ -633,7 +640,8 @@ function _kirimWaReminder(items, s) {
   let pesan = '*Monitoring Kerja Sama — ' + s.NAMA_INSTANSI + '*\n' +
     items.length + ' kerja sama perlu perhatian:\n\n';
   items.slice(0, 30).forEach((j, i) => {
-    const ket = j.sisa <= 0 ? 'BERAKHIR HARI INI' : 'sisa ' + j.sisa + ' hari';
+    const ket = j.sisa < 0 ? 'SUDAH HABIS (' + Math.abs(j.sisa) + ' hr lalu)'
+      : j.sisa === 0 ? 'BERAKHIR HARI INI' : 'sisa ' + j.sisa + ' hari';
     pesan += (i + 1) + '. ' + j.nama + ' (' + j.bentuk + ')\n   Berakhir ' + j.berakhir + ' — ' + ket + '\n';
   });
   pesan += '\nBuka dashboard: ' + s.BASE_URL;
@@ -710,7 +718,12 @@ function refreshSemuaStatus() {
 // ==================== MIGRASI DATA LAMA ====================
 // Jalankan SEKALI dari editor Apps Script setelah mengisi CONFIG.
 // Membaca tab "Form Responses 1" lama dan mengisi tab Mitra + Kerjasama.
-function migrasiDataLama() {
+function migrasiDataLama(force) {
+  // Pengaman idempoten: cegah migrasi dobel. Paksa dengan migrasiDataLama(true).
+  if (!force && _readAll(_kerjasamaSheet()).rows.length > 0) {
+    throw new Error('Tab "Kerjasama" sudah berisi data. Migrasi dibatalkan agar tidak dobel. ' +
+      'Jika memang ingin menambah, jalankan: migrasiDataLama(true)');
+  }
   const srcId = CONFIG.OLD_SPREADSHEET_ID || CONFIG.SPREADSHEET_ID;
   const src = SpreadsheetApp.openById(srcId).getSheetByName(CONFIG.OLD_SHEET_NAME);
   if (!src) throw new Error('Tab data lama "' + CONFIG.OLD_SHEET_NAME + '" tidak ditemukan.');

@@ -176,6 +176,16 @@ Reminder bersifat **anti-spam**: tiap baris hanya dikirim sekali per ambang
   sebisanya secara heuristik; sisanya dirapikan manual di tab `Mitra`/`Kerjasama`.
 - **Batas kuota**: Email MailApp ±100/hari (akun biasa). Reminder dikirim sebagai **satu email
   digest** berisi banyak baris, jadi hemat kuota.
+- **Zona waktu**: pastikan Apps Script memakai **Asia/Jakarta** (sudah diset di `appsscript.json`;
+  cek juga Project Settings → Time zone). Perhitungan "sisa hari" dihitung pada WIB agar tidak meleset.
+- **Migrasi aman dari dobel**: `migrasiDataLama()` menolak jalan bila tab Kerjasama sudah berisi data.
+  Untuk memaksa menambah: `migrasiDataLama(true)`.
+- **Reminder idempoten**: tiap dokumen hanya dikirim **sekali per tahap** (H-90/60/30/7/0 dan sekali
+  saat "baru habis" ≤7 hari). Kolom `Reminder Terakhir` mencatat tahap terakhir.
+- **Endpoint Web App bersifat publik** ("Anyone"): URL GAS ada di source halaman, jadi secara teknis
+  siapa pun bisa mengirim data. Untuk tool internal, pertimbangkan gerbang kata sandi pada form
+  (placeholder `ADMIN_PASSWORD` sudah tersedia di `build.js`) atau ganti akses Web App ke
+  "Anyone with Google account".
 
 ---
 
