@@ -177,6 +177,19 @@
   </form>
 </div>
 
+<div id="gate" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.7);z-index:1000;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:14px;padding:26px;max-width:360px;width:100%;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.3)">
+    <div style="font-size:34px">🔒</div>
+    <h3 style="margin:8px 0 4px">Kata Sandi Diperlukan</h3>
+    <p style="color:#64748b;font-size:13px;margin:0 0 16px">Masukkan kata sandi untuk mengisi data kerja sama.</p>
+    <input id="gatePw" type="password" placeholder="Kata sandi" autocomplete="current-password"
+      style="width:100%;padding:11px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:15px"
+      onkeydown="if(event.key==='Enter')submitGate()" />
+    <div id="gateMsg" style="color:#dc2626;font-size:12px;margin-top:8px;min-height:16px"></div>
+    <button class="btn" style="margin-top:10px" onclick="submitGate()">Masuk</button>
+  </div>
+</div>
+
 <div id="overlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:999;align-items:center;justify-content:center;flex-direction:column;color:#fff;text-align:center;padding:20px">
   <div class="spinner" style="width:44px;height:44px;border-width:4px;border-color:rgba(255,255,255,.35);border-top-color:#fff"></div>
   <div id="overlayText" style="margin-top:16px;font-size:15px;font-weight:700">Mengirim data…</div>
@@ -193,6 +206,17 @@
   function overlay(on, text){ const o=document.getElementById('overlay'); if(text) document.getElementById('overlayText').textContent=text; o.style.display=on?'flex':'none'; }
   function setReady(ready){ const b=document.getElementById('submitBtn'); b.disabled=!ready; b.innerHTML=ready?'💾 Simpan Kerja Sama':'⏳ Memuat data…'; }
 
+  // ── Gerbang kata sandi (diverifikasi server-side) ──
+  let PW = sessionStorage.getItem('simkerma_pw') || '';
+  function showGate(msg){ document.getElementById('gateMsg').textContent=msg||''; document.getElementById('gate').style.display='flex'; setTimeout(()=>document.getElementById('gatePw').focus(),60); }
+  function hideGate(){ document.getElementById('gate').style.display='none'; }
+  function submitGate(){
+    const v=document.getElementById('gatePw').value.trim();
+    if(!v){ document.getElementById('gateMsg').textContent='Kata sandi belum diisi'; return; }
+    PW=v; sessionStorage.setItem('simkerma_pw',v);
+    document.getElementById('gatePw').value=''; hideGate();
+  }
+
   async function load(){
     try{
       const r = await fetch(GAS_URL + '?action=getFormData');
@@ -205,6 +229,7 @@
       fillRuang(DATA.dataset['Ruang Lingkup']||[]);
       fillMitra();
       setReady(true);
+      if(DATA.authRequired && !PW) showGate();
     }catch(e){
       setReady(false);
       show('err','Gagal memuat data: '+e.message+'. Pastikan GAS_URL benar & Web App ter-deploy. <a href="#" onclick="location.reload();return false;">Muat ulang</a>');
@@ -353,6 +378,7 @@
 
     if(ruang.length===0){ show('err','Pilih minimal satu Ruang Lingkup.'); return; }
     if(!jenisMitra||!bentuk||!pengguna){ show('err','Lengkapi Jenis Mitra, Bentuk, dan Pengguna.'); return; }
+    if(DATA.authRequired && !PW){ showGate('Masukkan kata sandi dulu untuk menyimpan.'); return; }
 
     const fileInput=document.getElementById('file');
     const theFile=fileInput.files[0];
@@ -384,6 +410,7 @@
       refSebelumnya: MODE==='Perpanjangan'?document.getElementById('mitraSelect').value:'',
       dokumenInduk:document.getElementById('dokumenInduk').value,
       catatan:document.getElementById('catatan').value.trim(),
+      password:PW,
       file,
     };
 
@@ -398,6 +425,9 @@
         document.getElementById('mitraSuggest').innerHTML='';
         setMode('Baru');
         await load();
+      } else if(res.auth){
+        overlay(false); PW=''; sessionStorage.removeItem('simkerma_pw');
+        showGate('Kata sandi salah. Coba lagi.');
       } else { overlay(false); show('err','Gagal: '+(res.error||'tidak diketahui')); }
     }catch(err){ overlay(false); show('err','Gagal mengirim: '+err.message); }
     finally{ overlay(false); btn.disabled=false; btn.innerHTML='💾 Simpan Kerja Sama'; }

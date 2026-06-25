@@ -182,10 +182,13 @@ Reminder bersifat **anti-spam**: tiap baris hanya dikirim sekali per ambang
   Untuk memaksa menambah: `migrasiDataLama(true)`.
 - **Reminder idempoten**: tiap dokumen hanya dikirim **sekali per tahap** (H-90/60/30/7/0 dan sekali
   saat "baru habis" ≤7 hari). Kolom `Reminder Terakhir` mencatat tahap terakhir.
-- **Endpoint Web App bersifat publik** ("Anyone"): URL GAS ada di source halaman, jadi secara teknis
-  siapa pun bisa mengirim data. Untuk tool internal, pertimbangkan gerbang kata sandi pada form
-  (placeholder `ADMIN_PASSWORD` sudah tersedia di `build.js`) atau ganti akses Web App ke
-  "Anyone with Google account".
+- **Gerbang kata sandi form**: isi `CONFIG.ADMIN_PASSWORD` di `Code.gs`. Jika diisi, form akan
+  meminta kata sandi sebelum bisa menyimpan, dan backend **memverifikasinya server-side** (sandi
+  TIDAK ditaruh di source halaman, jadi aman). Kosongkan untuk membuka form tanpa sandi.
+  Bagikan sandi ini hanya ke petugas pengisi.
+- **Endpoint Web App tetap "Anyone"** agar form bisa mengirim tanpa login Google. Dengan gerbang
+  sandi di atas, penulisan data sudah terlindungi. Alternatif lebih ketat: ganti akses Web App ke
+  "Anyone with a Google account".
 
 ---
 

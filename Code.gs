@@ -21,6 +21,7 @@ const CONFIG = {
   SPREADSHEET_ID:  'GANTI_DENGAN_SPREADSHEET_ID',   // ID Google Sheets utama
   DRIVE_FOLDER_ID: 'GANTI_DENGAN_FOLDER_ID',        // Folder Drive untuk file MoU/PKS yang di-upload
   WA_TOKEN:        'GANTI_DENGAN_TOKEN_FONNTE',      // Token Fonnte (rahasia) — kosongkan bila WA tidak dipakai
+  ADMIN_PASSWORD:  '',                               // Kata sandi pengisian form. KOSONG = form terbuka tanpa sandi.
 
   // Nama tab
   MITRA_SHEET:      'Mitra',
@@ -162,15 +163,26 @@ function doPost(e) {
   const action = payload.action || '';
   let result;
   try {
-    if (action === 'submitKerjasama')     result = handleSubmit(payload);
-    else if (action === 'tambahDataset')  result = _addDatasetValue(payload.kategori, payload.nilai);
-    else if (action === 'updatePengaturan') result = _updatePengaturan(payload);
-    else if (action === 'runReminder')    result = cekDanKirimReminder(true);
+    const perluAuth = ['submitKerjasama', 'tambahDataset', 'updatePengaturan'];
+    if (perluAuth.indexOf(action) > -1 && !_authOk(payload)) {
+      result = { status: 'error', error: 'Kata sandi salah.', auth: true };
+    }
+    else if (action === 'submitKerjasama')   result = handleSubmit(payload);
+    else if (action === 'tambahDataset')     result = _addDatasetValue(payload.kategori, payload.nilai);
+    else if (action === 'updatePengaturan')  result = _updatePengaturan(payload);
+    else if (action === 'runReminder')       result = cekDanKirimReminder(true);
     else result = { status: 'error', error: 'Action tidak dikenal: ' + action };
   } catch (err) {
     result = { status: 'error', error: String(err && err.message || err) };
   }
   return _json(result);
+}
+
+// Verifikasi kata sandi form (server-side). Kosong di CONFIG = tanpa sandi.
+function _authOk(payload) {
+  const pw = String(CONFIG.ADMIN_PASSWORD || '');
+  if (!pw) return true;
+  return String((payload && payload.password) || '') === pw;
 }
 
 function _json(obj) {
@@ -425,6 +437,7 @@ function getFormData() {
     instansi: _settings().NAMA_INSTANSI,
     dataset: _getDataset(),
     mitra, dokByMitra,
+    authRequired: String(CONFIG.ADMIN_PASSWORD || '') !== '',
   };
 }
 
