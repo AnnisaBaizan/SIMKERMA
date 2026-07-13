@@ -185,6 +185,9 @@
   menu.addEventListener('click', e=>{ const b=e.target.closest('[data-fmt]'); if(!b) return; menu.classList.remove('open'); b.dataset.fmt==='xlsx'?exportXlsx():exportCsv(); });
   document.addEventListener('click', ()=>menu.classList.remove('open'));
 
+  // Sesi admin di-reset tiap tab tidak aktif → saat kembali, kunci lagi otomatis.
+  SIMKERMA.onReturn = function(){ if(isAdmin() && !gate.pw){ lockAdmin(); } };
+
   load();
 </script>
 </body>

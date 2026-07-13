@@ -15,6 +15,7 @@
 <div class="container narrow">
   <div id="msg" class="msg"></div>
 
+  <div id="formArea" style="display:none">
   <div class="card">
     <p class="section-title">Jenis Pengisian</p>
     <div class="mode">
@@ -104,6 +105,7 @@
 
     <button type="submit" class="btn primary block" id="submitBtn" disabled>⏳ Memuat data…</button>
   </form>
+  </div><!-- /formArea -->
 </div>
 
 <script>
@@ -114,8 +116,13 @@
   const ruangSelected=new Set();
 
   function setReady(ready){ const b=document.getElementById('submitBtn'); b.disabled=!ready; b.innerHTML=ready?'💾 Simpan Kerja Sama':'⏳ Memuat data…'; }
+  function revealForm(){ gate.close(); document.getElementById('formArea').style.display=''; }
+  function hideForm(){ document.getElementById('formArea').style.display='none'; }
+  function requireLogin(msg){ hideForm(); gate.prompt(msg||'', revealForm, { mandatory:true, sub:'Masukkan kata sandi untuk mengisi formulir.' }); }
 
+  // Popup selalu muncul lebih dulu; saat data dimuat, popup menampilkan loading.
   async function load(){
+    gate.loading('Memuat data…');
     try{
       DATA=await api.get('getFormData');
       if(DATA.error) throw new Error(DATA.error);
@@ -125,11 +132,15 @@
       fillSelect('pengguna', DATA.dataset['Pengguna MoU/PKS']);
       fillRuang(DATA.dataset['Ruang Lingkup']||[]);
       fillMitra(); setReady(true);
-      if(DATA.authRequired && !gate.pw) gate.prompt('');
       const ep=new URLSearchParams(location.search).get('edit');
-      if(ep) loadEditRecord(ep);
-    }catch(e){ setReady(false); show('err','Gagal memuat data: '+esc(e.message)+'. <a href="#" onclick="location.reload();return false;">Muat ulang</a>'); }
+      if(ep) await loadEditRecord(ep);
+      if(DATA.authRequired && !gate.pw) requireLogin();   // wajib login sebelum form tampil
+      else revealForm();                                   // tanpa sandi → langsung buka
+    }catch(e){ gate.close(); setReady(false); show('err','Gagal memuat data: '+esc(e.message)+'. <a href="#" onclick="location.reload();return false;">Muat ulang</a>'); }
   }
+
+  // Sesi di-reset tiap tab tidak aktif → saat kembali, wajib login lagi (jika perlu sandi).
+  SIMKERMA.onReturn = function(){ if(DATA.authRequired && !gate.pw) requireLogin('Sesi berakhir karena tab tidak aktif. Silakan masuk lagi.'); };
 
   function fillSelect(id,arr){ const s=document.getElementById(id); s.innerHTML='<option value="">— pilih —</option>';
     (arr||[]).forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; s.appendChild(o); });
@@ -188,7 +199,6 @@
       document.getElementById('catatan').value=k.catatan||'';
       SIMKERMA.setSub('Edit Kerja Sama'); document.getElementById('submitBtn').innerHTML='💾 Perbarui Kerja Sama';
       show('ok','✏️ <b>Mode edit</b> — mengubah «'+esc(k.namaMitra||'')+'». Ubah seperlunya lalu simpan.');
-      if(DATA.authRequired && !gate.pw) gate.prompt('Masuk admin untuk menyimpan perubahan.');
     }catch(e){ show('err','Gagal memuat data edit: '+esc(e.message)); }
   }
 
@@ -201,7 +211,7 @@
     const ruangNew=[...document.getElementById('ruangChips').children].some(c=>c.dataset.new && ruangSelected.has(c.dataset.v));
     if(ruang.length===0){ show('err','Pilih minimal satu Ruang Lingkup.'); return; }
     if(!jenisMitra||!bentuk||!pengguna){ show('err','Lengkapi Jenis Mitra, Bentuk, dan Pengguna.'); return; }
-    if(DATA.authRequired && !gate.pw){ gate.prompt('Masukkan kata sandi untuk menyimpan.', ()=>document.getElementById('form').requestSubmit()); return; }
+    if(DATA.authRequired && !gate.pw){ gate.prompt('Masukkan kata sandi untuk menyimpan.', ()=>document.getElementById('form').requestSubmit(), {mandatory:true}); return; }
 
     const fileInput=document.getElementById('file'), theFile=fileInput.files[0];
     if(theFile && theFile.size>10*1024*1024){ show('err','Ukuran berkas '+(theFile.size/1048576).toFixed(1)+' MB melebihi batas 10 MB. Mohon kompres dulu.'); return; }
@@ -229,7 +239,7 @@
         document.getElementById('form').reset(); ruangSelected.clear();
         [...document.getElementById('ruangChips').children].forEach(c=>c.classList.remove('on'));
         document.getElementById('mitraSuggest').innerHTML=''; setMode('Baru'); await load(); }
-      else if(res.auth){ overlay(false); gate.clear(); gate.prompt('Kata sandi salah. Coba lagi.', ()=>document.getElementById('form').requestSubmit()); }
+      else if(res.auth){ overlay(false); gate.clear(); gate.prompt('Kata sandi salah. Coba lagi.', ()=>document.getElementById('form').requestSubmit(), {mandatory:true}); }
       else { overlay(false); show('err','Gagal: '+(res.error||'tidak diketahui')); }
     }catch(err){ overlay(false); show('err','Gagal mengirim: '+esc(err.message)); }
     finally{ overlay(false); btn.disabled=false; if(!EDIT_ID) btn.innerHTML='💾 Simpan Kerja Sama'; }

@@ -73,38 +73,60 @@
   };
 
   // ---- Gerbang kata sandi (self-inject modal) ----
+  // Sesi in-memory (TIDAK persist) — otomatis hilang saat tab tidak aktif (lihat visibilitychange).
   S.gate = {
-    pw: sessionStorage.getItem('simkerma_pw') || '',
-    _m: null, _cb: null,
+    pw: '',
+    _m: null, _cb: null, _mandatory: false,
     _ensure: function () {
       if (this._m) return; var self = this;
       var m = document.createElement('div'); m.className = 'modal';
-      m.innerHTML = '<div class="box"><div style="font-size:32px">🔒</div>' +
-        '<h3>Masuk Admin</h3><p class="muted">Kata sandi untuk menambah/ubah/hapus data.</p>' +
-        '<input type="password" class="gpw" placeholder="Kata sandi" autocomplete="current-password"/>' +
-        '<div class="gmsg"></div>' +
-        '<div class="grow"><button class="btn outline gcancel" style="flex:1">Batal</button>' +
-        '<button class="btn primary gok" style="flex:1">Masuk</button></div></div>';
+      m.innerHTML = '<div class="box">' +
+        '<div class="gload"><div class="spin"></div><div class="gloadtext">Memuat…</div></div>' +
+        '<div class="gmain"><div style="font-size:32px">🔒</div>' +
+          '<h3>Masuk Admin</h3><p class="muted gsub">Kata sandi untuk menambah/ubah/hapus data.</p>' +
+          '<input type="password" class="gpw" placeholder="Kata sandi" autocomplete="current-password"/>' +
+          '<div class="gmsg"></div>' +
+          '<div class="grow"><button class="btn outline gcancel" style="flex:1">Batal</button>' +
+          '<button class="btn primary gok" style="flex:1">Masuk</button></div></div></div>';
       document.body.appendChild(m); this._m = m;
       var inp = m.querySelector('.gpw'), msg = m.querySelector('.gmsg');
       function submit() {
         var v = inp.value.trim(); if (!v) { msg.textContent = 'Kata sandi belum diisi'; return; }
-        self.pw = v; sessionStorage.setItem('simkerma_pw', v); inp.value = ''; self.close();
+        self.pw = v; inp.value = ''; self.close();
         var cb = self._cb; self._cb = null; if (cb) cb();
       }
       m.querySelector('.gok').onclick = submit;
       m.querySelector('.gcancel').onclick = function () { self.close(); };
       inp.onkeydown = function (e) { if (e.key === 'Enter') submit(); };
     },
-    prompt: function (message, cb) {
-      this._ensure(); this._cb = cb || null;
+    _view: function (loading) {
+      this._m.querySelector('.gload').style.display = loading ? '' : 'none';
+      this._m.querySelector('.gmain').style.display = loading ? 'none' : '';
+    },
+    // Tampilkan popup dalam keadaan "loading" (dipakai saat data sedang dimuat)
+    loading: function (text) {
+      this._ensure(); this._mandatory = true;
+      this._m.querySelector('.gloadtext').textContent = text || 'Memuat…';
+      this._view(true); this._m.classList.add('on');
+    },
+    // Tampilkan popup login. opts.mandatory = true → tanpa tombol Batal (wajib login).
+    prompt: function (message, cb, opts) {
+      opts = opts || {}; this._ensure(); this._cb = cb || null; this._mandatory = !!opts.mandatory;
+      this._m.querySelector('.gsub').textContent = opts.sub || 'Masukkan kata sandi untuk melanjutkan.';
       this._m.querySelector('.gmsg').textContent = message || '';
-      this._m.classList.add('on');
+      this._m.querySelector('.gcancel').style.display = this._mandatory ? 'none' : '';
+      this._view(false); this._m.classList.add('on');
       var inp = this._m.querySelector('.gpw'); setTimeout(function () { inp.focus(); }, 60);
     },
     close: function () { if (this._m) this._m.classList.remove('on'); },
-    clear: function () { this.pw = ''; sessionStorage.removeItem('simkerma_pw'); }
+    clear: function () { this.pw = ''; }
   };
+
+  // Reset sesi login SETIAP tab tidak aktif; panggil hook saat tab aktif kembali.
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { S.gate.clear(); }
+    else if (typeof S.onReturn === 'function') { S.onReturn(); }
+  });
 
   // ---- Pesan inline (butuh elemen #msg) ----
   S.msg = function (type, html) {

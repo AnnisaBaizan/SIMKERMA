@@ -159,6 +159,8 @@ tr.detail:hover{background:#faf9ff}
 .modal .box .muted{margin:0 0 16px}
 .modal .box .gmsg{color:var(--red);font-size:12px;margin-top:8px;min-height:15px}
 .modal .box .grow{display:flex;gap:8px;margin-top:14px}
+.modal .box .gload{padding:16px 0}
+.modal .box .gloadtext{margin-top:10px;color:var(--muted);font-size:13px}
 
 /* ---------- Admin bar ---------- */
 .adminbar{background:var(--accent-soft);border:1px solid #dcdcfb;color:var(--accent-d);padding:9px 13px;
