@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>SIPAKAT — Input Kerja Sama</title>
+<title>SIMKERMA — Input Kerja Sama</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%236d28d9'/%3E%3Ctext x='16' y='23' font-size='19' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'%3ES%3C/text%3E%3C/svg%3E" />
 <style>
   :root { --teal:#6d28d9; --teal-d:#5b21b6; --bg:#f1f5f9; --line:#e2e8f0; --txt:#1e293b; --muted:#64748b; }
@@ -52,8 +52,8 @@
     <a href="index.html">📊 Dashboard →</a>
   </div>
   <div class="wrap">
-    <h1>Input Kerja Sama · SIPAKAT</h1>
-    <p id="instansi">Sistem Pemantauan & Arsip Kerja sama Terpadu</p>
+    <h1>Input Kerja Sama · SIMKERMA</h1>
+    <p id="instansi">Sistem Informasi Kerja Sama</p>
   </div>
 </header>
 
@@ -207,13 +207,13 @@
   function setReady(ready){ const b=document.getElementById('submitBtn'); b.disabled=!ready; b.innerHTML=ready?'💾 Simpan Kerja Sama':'⏳ Memuat data…'; }
 
   // ── Gerbang kata sandi (diverifikasi server-side) ──
-  let PW = sessionStorage.getItem('sipakat_pw') || '';
+  let PW = sessionStorage.getItem('simkerma_pw') || '';
   function showGate(msg){ document.getElementById('gateMsg').textContent=msg||''; document.getElementById('gate').style.display='flex'; setTimeout(()=>document.getElementById('gatePw').focus(),60); }
   function hideGate(){ document.getElementById('gate').style.display='none'; }
   function submitGate(){
     const v=document.getElementById('gatePw').value.trim();
     if(!v){ document.getElementById('gateMsg').textContent='Kata sandi belum diisi'; return; }
-    PW=v; sessionStorage.setItem('sipakat_pw',v);
+    PW=v; sessionStorage.setItem('simkerma_pw',v);
     document.getElementById('gatePw').value=''; hideGate();
   }
 
@@ -426,7 +426,7 @@
         setMode('Baru');
         await load();
       } else if(res.auth){
-        overlay(false); PW=''; sessionStorage.removeItem('sipakat_pw');
+        overlay(false); PW=''; sessionStorage.removeItem('simkerma_pw');
         showGate('Kata sandi salah. Coba lagi.');
       } else { overlay(false); show('err','Gagal: '+(res.error||'tidak diketahui')); }
     }catch(err){ overlay(false); show('err','Gagal mengirim: '+err.message); }

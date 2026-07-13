@@ -1,5 +1,5 @@
 // ============================================================
-//  SIPAKAT — Sistem Pemantauan & Arsip Kerja sama Terpadu
+//  SIMKERMA — Sistem Informasi Kerja Sama
 //  (Monitoring Masa Berlaku Kerja Sama) — Poltekkes Kemenkes Palembang
 //  Backend Google Apps Script (Web App)
 //  Deploy: Web App | Execute as: Me | Who has access: Anyone
@@ -36,7 +36,7 @@ const CONFIG = {
   // Default Pengaturan — dipakai bila tab "Pengaturan" kosong:
   NAMA_INSTANSI: 'Politeknik Kesehatan Kemenkes Palembang',
   EMAIL_NOTIF:   'lukman@poltekkespalembang.ac.id, kerjasama@poltekkespalembang.ac.id, okta@poltekkespalembang.ac.id',
-  BASE_URL:      'https://sipakat-polkesbang.vercel.app',
+  BASE_URL:      'https://simkerma.vercel.app',
   REMINDER_HARI: '90,60,30,7,0',  // ambang H- (hari). 0 = hari berakhir
   EMAIL_AKTIF:   true,
   WA_AKTIF:      false,            // aktifkan setelah WA_TOKEN & WA_TARGET diisi
