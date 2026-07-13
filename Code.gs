@@ -163,11 +163,12 @@ function doPost(e) {
   const action = payload.action || '';
   let result;
   try {
-    const perluAuth = ['submitKerjasama', 'tambahDataset', 'updatePengaturan'];
+    const perluAuth = ['submitKerjasama', 'deleteKerjasama', 'tambahDataset', 'updatePengaturan'];
     if (perluAuth.indexOf(action) > -1 && !_authOk(payload)) {
       result = { status: 'error', error: 'Kata sandi salah.', auth: true };
     }
     else if (action === 'submitKerjasama')   result = handleSubmit(payload);
+    else if (action === 'deleteKerjasama')   result = deleteKerjasama(payload.id);
     else if (action === 'tambahDataset')     result = _addDatasetValue(payload.kategori, payload.nilai);
     else if (action === 'updatePengaturan')  result = _updatePengaturan(payload);
     else if (action === 'runReminder')       result = cekDanKirimReminder(true);
@@ -336,21 +337,65 @@ function handleSubmit(d) {
       fileUrl = _saveFile(d.file, d.namaMitra, d.nomorSurat);
     }
 
-    const id = 'K' + Utilities.formatDate(new Date(), 'GMT+7', 'yyyyMMddHHmmss') +
-      Math.floor(Math.random() * 90 + 10);
     const { status, sisa } = _hitungStatus(berakhir);
-
-    _kerjasamaSheet().appendRow([
-      id, new Date(), idMitra, String(d.namaMitra).trim(), d.jenisMitra || '', d.wilayah || '',
+    const sheet = _kerjasamaSheet();
+    const buildRow = (id, ts, fileVal, reminderVal, emailVal) => ([
+      id, ts, idMitra, String(d.namaMitra).trim(), d.jenisMitra || '', d.wilayah || '',
       d.nomorSurat || '', d.bentuk || '', d.ruangLingkup || '', d.pengguna || '', d.jabatan || '',
       Number(d.biaya) || 0, masa, mulai, berakhir,
-      d.jenisEntri || 'Baru', d.refSebelumnya || '', d.dokumenInduk || '', fileUrl, d.catatan || '',
-      status, sisa, d.email || '', '',
+      d.jenisEntri || 'Baru', d.refSebelumnya || '', d.dokumenInduk || '', fileVal, d.catatan || '',
+      status, sisa, emailVal, reminderVal,
     ]);
 
+    // ── Mode EDIT (admin) ──
+    if (d.editId) {
+      const found = _findKerjasamaRow(d.editId);
+      if (!found) return { status: 'error', error: 'Data yang diedit tidak ditemukan: ' + d.editId };
+      const H = n => HEADERS_KERJASAMA.indexOf(n);
+      const old = found.data;
+      const fileVal = (d.file && d.file.data) ? fileUrl : old[H('Link File MoU/PKS')];
+      const ts = old[H('Timestamp')] || new Date();
+      const emailVal = old[H('Diinput Oleh')] || d.email || '';
+      // Reminder direset ('') karena syarat/tanggal mungkin berubah → tahap pengingat dihitung ulang
+      sheet.getRange(found.rowIndex, 1, 1, HEADERS_KERJASAMA.length).setValues([buildRow(d.editId, ts, fileVal, '', emailVal)]);
+      _recountMitra();
+      SpreadsheetApp.flush();
+      return { status: 'success', id: d.editId, updated: true, tanggalBerakhir: berakhir ? Utilities.formatDate(berakhir, 'GMT+7', 'yyyy-MM-dd') : '' };
+    }
+
+    // ── Mode CREATE ──
+    const id = 'K' + Utilities.formatDate(new Date(), 'GMT+7', 'yyyyMMddHHmmss') +
+      Math.floor(Math.random() * 90 + 10);
+    sheet.appendRow(buildRow(id, new Date(), fileUrl, '', d.email || ''));
     _recountMitra();
     SpreadsheetApp.flush();
     return { status: 'success', id, idMitra, tanggalBerakhir: berakhir ? Utilities.formatDate(berakhir, 'GMT+7', 'yyyy-MM-dd') : '' };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Cari baris kerja sama berdasarkan ID Kerjasama → { rowIndex (1-based sheet), data }
+function _findKerjasamaRow(id) {
+  const { rows } = _readAll(_kerjasamaSheet());
+  id = String(id || '').trim();
+  for (let i = 0; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === id) return { rowIndex: i + 2, data: rows[i] };
+  }
+  return null;
+}
+
+// Hapus satu kerja sama (admin, bergerbang sandi lewat doPost)
+function deleteKerjasama(id) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const found = _findKerjasamaRow(id);
+    if (!found) return { status: 'error', error: 'Data tidak ditemukan: ' + id };
+    _kerjasamaSheet().deleteRow(found.rowIndex);
+    _recountMitra();
+    SpreadsheetApp.flush();
+    return { status: 'success', deleted: id };
   } finally {
     lock.releaseLock();
   }
@@ -461,6 +506,7 @@ function _listKerjasama() {
       masaBerlaku: r[H('Masa Berlaku (tahun)')],
       mulai: _fmt(r[H('Tanggal Mulai')]), berakhir: _fmt(bDate),
       jenisEntri: r[H('Jenis Entri')], file: r[H('Link File MoU/PKS')],
+      dokumenInduk: r[H('Dokumen Induk (MoU)')], refSebelumnya: r[H('Ref Kerjasama Sebelumnya')],
       catatan: r[H('Catatan')], status, sisa,
     };
   });

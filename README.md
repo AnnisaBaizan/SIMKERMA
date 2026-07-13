@@ -133,6 +133,22 @@ npm run build                           # → dist/
 
 ## 4. Pemakaian
 
+### Model akses
+Data kerja sama bersifat **publik untuk dibaca**, hak tulis dibatasi kata sandi:
+
+| Peran | Bisa | Halaman |
+|-------|------|---------|
+| **Publik** (tanpa login) | **Read** — lihat dashboard & telusuri tabel | `index.html`, `data.html` |
+| **Admin** (kata sandi) | **CRUD** — tambah, ubah, hapus | `form.html`, tombol Edit/Hapus di `data.html` |
+
+Gerbang admin = `CONFIG.ADMIN_PASSWORD` (diverifikasi server-side). Endpoint baca (`getDashboard`,
+`getKerjasama`) terbuka; endpoint tulis (`submitKerjasama`, `deleteKerjasama`, dll) wajib sandi.
+
+- **`data.html`** — Tabel data kerja sama (publik, read-only):
+  - Pencarian bebas + filter (status, jenis mitra, pengguna, bentuk, tahun mulai), urut kolom, paginasi.
+  - Baris bisa di-expand untuk detail (wilayah, ruang lingkup, jabatan, biaya, dokumen induk, catatan).
+  - **Ekspor CSV** sesuai filter aktif (untuk rapat/arsip).
+  - Tombol **Admin** → masuk kata sandi → muncul **Edit** (buka `form.html?edit=<id>`) & **Hapus** per baris.
 - **`form.html`** — Input kerja sama.
   - Mode **Kerja Sama Baru**: isi semua field; mitra boleh baru atau pilih yang sudah ada.
   - Mode **Perpanjangan**: pilih mitra dari daftar → data mitra ter-isi otomatis; isi ulang
@@ -197,8 +213,9 @@ Reminder bersifat **anti-spam**: tiap baris hanya dikirim sekali per ambang
 ```
 Monitoring-Kerjasama/
 ├── Code.gs            # Backend Google Apps Script (Web App)
-├── form.html          # Form input (mode Baru/Perpanjangan)
+├── form.html          # Form input/edit (mode Baru/Perpanjangan, ?edit=<id> untuk admin)
 ├── index.html         # Dashboard insight (Chart.js)
+├── data.html          # Tabel data publik (cari/filter/urut/CSV) + Edit/Hapus admin
 ├── build.js           # Inject GAS_URL → dist/ (Node bawaan, tanpa npm install)
 ├── vercel.json        # Konfigurasi build statis Vercel
 ├── package.json       # Metadata + script build
@@ -209,17 +226,20 @@ Monitoring-Kerjasama/
 
 ## 8. Endpoint API (Web App)
 
-`GET ?action=`
-- `getFormData` → dataset dropdown + daftar mitra (untuk form)
+`GET ?action=` (publik, read-only)
+- `getFormData` → dataset dropdown + daftar mitra + `authRequired` (untuk form/tabel)
 - `getDashboard` → seluruh agregasi insight
-- `getKerjasama` → daftar kerja sama
+- `getKerjasama` → daftar kerja sama (untuk tabel & prefill edit)
 - `ping` → cek koneksi
 
-`POST { action }`
-- `submitKerjasama` → simpan kerja sama (+ upsert mitra, dataset baru, upload file)
-- `tambahDataset` → tambah nilai dropdown
-- `updatePengaturan` → ubah pengaturan
+`POST { action }` (★ = wajib `password` bila `ADMIN_PASSWORD` diisi)
+- ★ `submitKerjasama` → simpan kerja sama baru; bila `editId` diisi → **update** baris itu (upsert mitra, dataset baru, upload/keep file)
+- ★ `deleteKerjasama` `{ id }` → hapus satu kerja sama
+- ★ `tambahDataset` → tambah nilai dropdown
+- ★ `updatePengaturan` → ubah pengaturan
 - `runReminder` → kirim reminder manual (uji)
+
+Respons gagal-otentikasi: `{ status:'error', auth:true }` → frontend meminta sandi ulang.
 
 Fungsi editor (jalankan manual): `setupAwal`, `pasangTriggerReminder`, `migrasiDataLama`,
 `refreshSemuaStatus`, `cekDanKirimReminder`.

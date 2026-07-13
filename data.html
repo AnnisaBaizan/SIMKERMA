@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SIMKERMA — Data Kerja Sama</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%236d28d9'/%3E%3Ctext x='16' y='23' font-size='19' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'%3ES%3C/text%3E%3C/svg%3E" />
+<style>
+  :root { --teal:#6d28d9; --teal-d:#5b21b6; --bg:#f1f5f9; --line:#e2e8f0; --txt:#1e293b; --muted:#64748b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--txt); }
+  header { background:linear-gradient(135deg,#6366f1,#7c3aed); color:#fff; padding:18px 16px; }
+  .wrap { max-width:1280px; margin:auto; }
+  header .top { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  header h1 { margin:0; font-size:20px; }
+  header p { margin:3px 0 0; opacity:.9; font-size:13px; }
+  .btn { background:#fff; color:var(--teal-d); padding:9px 14px; border-radius:8px; text-decoration:none; font-weight:600; font-size:13px; border:none; cursor:pointer; }
+  .btn.ghost { background:rgba(255,255,255,.15); color:#fff; }
+  .container { max-width:1280px; margin:16px auto 60px; padding:0 16px; }
+  .toolbar { background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+  .toolbar .rowf { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  input,select { padding:9px 11px; border:1px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; background:#fff; }
+  input:focus,select:focus { outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(109,40,217,.12); }
+  #q { flex:1; min-width:200px; }
+  .count { font-size:12px; color:var(--muted); margin-top:10px; }
+  .tablewrap { background:#fff; border:1px solid var(--line); border-radius:12px; overflow:auto; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+  table { width:100%; border-collapse:collapse; font-size:13px; min-width:920px; }
+  th,td { text-align:left; padding:9px 11px; border-bottom:1px solid var(--line); vertical-align:top; }
+  thead th { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.4px; background:#f8fafc; position:sticky; top:0; cursor:pointer; white-space:nowrap; user-select:none; z-index:1; }
+  thead th .ar { opacity:.5; font-size:10px; }
+  tbody tr:hover { background:#faf9ff; }
+  .badge { padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap; display:inline-block; }
+  .b-red{background:#fee2e2;color:#991b1b;} .b-amber{background:#fef3c7;color:#92400e;} .b-green{background:#dcfce7;color:#166534;} .b-gray{background:#f1f5f9;color:#475569;}
+  .mitra { font-weight:600; }
+  .sub { color:var(--muted); font-size:11px; }
+  a.link { color:var(--teal-d); text-decoration:none; } a.link:hover { text-decoration:underline; }
+  .expand { cursor:pointer; color:var(--teal-d); font-weight:700; user-select:none; }
+  .detail td { background:#faf9ff; }
+  .detail .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:6px 18px; font-size:12px; }
+  .detail .grid b { color:var(--muted); font-weight:600; }
+  .pager { display:flex; gap:8px; align-items:center; justify-content:center; margin-top:14px; flex-wrap:wrap; }
+  .pager button { padding:7px 12px; border:1px solid var(--line); background:#fff; border-radius:8px; cursor:pointer; font-size:13px; }
+  .pager button:disabled { opacity:.45; cursor:not-allowed; }
+  .loading { text-align:center; padding:60px; color:var(--muted); }
+  .spin { width:34px;height:34px;border:4px solid var(--line);border-top-color:var(--teal);border-radius:50%;animation:s .8s linear infinite;margin:0 auto 14px;}
+  @keyframes s{to{transform:rotate(360deg);}}
+  .act { display:inline-flex; gap:6px; }
+  .act button { border:1px solid var(--line); background:#fff; border-radius:6px; padding:4px 8px; font-size:12px; cursor:pointer; }
+  .act .del { color:#b91c1c; border-color:#fecaca; }
+  .adminbar { background:#f5f3ff; border:1px solid #ddd6fe; color:#5b21b6; padding:8px 12px; border-radius:8px; font-size:12px; margin-bottom:12px; display:none; align-items:center; gap:10px; }
+  .adminbar.on { display:flex; }
+  .modal { display:none; position:fixed; inset:0; background:rgba(15,23,42,.6); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+  .modal.on { display:flex; }
+  .modal .box { background:#fff; border-radius:14px; padding:24px; max-width:360px; width:100%; text-align:center; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap top">
+    <div>
+      <h1>📋 Data Kerja Sama</h1>
+      <p id="sub">SIMKERMA — memuat…</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn ghost" href="index.html">📊 Dashboard</a>
+      <a class="btn ghost" href="form.html">➕ Input</a>
+      <button class="btn" id="adminBtn" onclick="toggleAdmin()">🔒 Admin</button>
+      <button class="btn" onclick="exportCsv()">⬇️ CSV</button>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="adminbar" id="adminbar">🔓 <b>Mode admin aktif</b> — tombol Edit/Hapus muncul di tiap baris. <a href="#" onclick="lockAdmin();return false;" style="color:#5b21b6">Kunci</a></div>
+
+  <div class="toolbar">
+    <div class="rowf">
+      <input id="q" placeholder="🔎 Cari mitra, nomor surat, pengguna, jenis…" oninput="applyFilter()" />
+      <select id="fStatus" onchange="applyFilter()"><option value="">Semua status</option><option>Aktif</option><option>Segera Berakhir</option><option>Habis</option></select>
+      <select id="fJenis" onchange="applyFilter()"><option value="">Semua jenis mitra</option></select>
+      <select id="fPengguna" onchange="applyFilter()"><option value="">Semua pengguna</option></select>
+      <select id="fBentuk" onchange="applyFilter()"><option value="">Semua bentuk</option></select>
+      <select id="fTahun" onchange="applyFilter()"><option value="">Semua tahun mulai</option></select>
+      <button class="btn" style="background:var(--teal);color:#fff" onclick="resetFilter()">Reset</button>
+    </div>
+    <div class="count" id="count"></div>
+  </div>
+
+  <div id="loading" class="loading"><div class="spin"></div>Memuat data…</div>
+
+  <div id="content" style="display:none">
+    <div class="tablewrap">
+      <table>
+        <thead><tr id="head"></tr></thead>
+        <tbody id="body"></tbody>
+      </table>
+    </div>
+    <div class="pager" id="pager"></div>
+  </div>
+</div>
+
+<div class="modal" id="pwModal">
+  <div class="box">
+    <div style="font-size:32px">🔒</div>
+    <h3 style="margin:8px 0 4px">Masuk Admin</h3>
+    <p style="color:#64748b;font-size:13px;margin:0 0 14px">Kata sandi untuk mengedit/menghapus data.</p>
+    <input id="pwInput" type="password" placeholder="Kata sandi" style="width:100%" onkeydown="if(event.key==='Enter')doLogin()" />
+    <div id="pwMsg" style="color:#dc2626;font-size:12px;margin-top:8px;min-height:15px"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn" style="flex:1;border:1px solid var(--line)" onclick="closeModal()">Batal</button>
+      <button class="btn" style="flex:1;background:var(--teal);color:#fff" onclick="doLogin()">Masuk</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const GAS_URL = "__GAS_URL__";
+  const COLS = [
+    { key:'namaMitra', label:'Mitra' },
+    { key:'jenisMitra', label:'Jenis' },
+    { key:'bentuk', label:'Bentuk' },
+    { key:'nomorSurat', label:'No. Surat' },
+    { key:'pengguna', label:'Pengguna' },
+    { key:'mulai', label:'Mulai' },
+    { key:'berakhir', label:'Berakhir' },
+    { key:'sisa', label:'Sisa', num:true },
+    { key:'status', label:'Status' },
+  ];
+  let ALL=[], VIEW=[], page=1, perPage=25, sortKey='sisa', sortDir=1, expanded=new Set();
+  let PW = sessionStorage.getItem('simkerma_pw') || '';
+  let authRequired = true;
+
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function badge(k){ const c=k.status==='Habis'?'b-red':k.status==='Segera Berakhir'?'b-amber':k.status==='Aktif'?'b-green':'b-gray';
+    return '<span class="badge '+c+'">'+esc(k.status)+'</span>'; }
+  function sisaTxt(k){ if(k.sisa===''||k.sisa==null) return '—'; return k.sisa<0 ? Math.abs(k.sisa)+' hr lalu' : k.sisa+' hr'; }
+
+  async function load(){
+    try{
+      const r = await fetch(GAS_URL+'?action=getKerjasama');
+      const j = await r.json();
+      if(j.error) throw new Error(j.error);
+      ALL = j.data||[];
+      // authRequired diambil dari getFormData (ringan) untuk tahu apakah perlu sandi
+      try{ const fr=await fetch(GAS_URL+'?action=getFormData'); const fj=await fr.json();
+        authRequired = !!fj.authRequired; document.getElementById('sub').textContent = (fj.instansi||'SIMKERMA'); }catch(e){}
+      buildFilters(); renderHead(); applyFilter();
+      document.getElementById('loading').style.display='none';
+      document.getElementById('content').style.display='block';
+    }catch(e){
+      document.getElementById('loading').innerHTML='❌ Gagal memuat: '+esc(e.message)+'<br><span style="color:#64748b">Pastikan GAS_URL benar & Web App aktif.</span>';
+    }
+  }
+
+  function uniq(key){ return [...new Set(ALL.map(x=>x[key]).filter(v=>v!==''&&v!=null))].sort(); }
+  function buildFilters(){
+    fill('fJenis', uniq('jenisMitra')); fill('fPengguna', uniq('pengguna')); fill('fBentuk', uniq('bentuk'));
+    const tahun=[...new Set(ALL.map(x=>String(x.mulai).slice(0,4)).filter(v=>/^\d{4}$/.test(v)))].sort().reverse();
+    fill('fTahun', tahun);
+  }
+  function fill(id, arr){ const s=document.getElementById(id); const keep=s.firstElementChild.outerHTML;
+    s.innerHTML=keep+arr.map(v=>'<option>'+esc(v)+'</option>').join(''); }
+
+  function renderHead(){
+    document.getElementById('head').innerHTML =
+      '<th style="width:26px"></th>' +
+      COLS.map(c=>'<th onclick="sortBy(\''+c.key+'\')">'+c.label+' <span class="ar" id="ar-'+c.key+'"></span></th>').join('') +
+      '<th>Berkas</th><th class="admincol" style="display:none">Aksi</th>';
+    updateAdminCols();
+  }
+
+  function applyFilter(){
+    const q=(document.getElementById('q').value||'').toLowerCase();
+    const fs=document.getElementById('fStatus').value, fj=document.getElementById('fJenis').value,
+      fp=document.getElementById('fPengguna').value, fb=document.getElementById('fBentuk').value, ft=document.getElementById('fTahun').value;
+    VIEW = ALL.filter(k=>{
+      if(fs && k.status!==fs) return false;
+      if(fj && k.jenisMitra!==fj) return false;
+      if(fp && k.pengguna!==fp) return false;
+      if(fb && k.bentuk!==fb) return false;
+      if(ft && String(k.mulai).slice(0,4)!==ft) return false;
+      if(q){ const hay=(k.namaMitra+' '+k.nomorSurat+' '+k.pengguna+' '+k.jenisMitra+' '+k.bentuk+' '+k.ruangLingkup).toLowerCase();
+        if(!hay.includes(q)) return false; }
+      return true;
+    });
+    sortView(); page=1; render();
+  }
+  function resetFilter(){ ['q','fStatus','fJenis','fPengguna','fBentuk','fTahun'].forEach(id=>document.getElementById(id).value=''); applyFilter(); }
+
+  function sortBy(key){ if(sortKey===key) sortDir*=-1; else { sortKey=key; sortDir=1; } sortView(); render(); }
+  function sortView(){
+    const col=COLS.find(c=>c.key===sortKey)||{};
+    VIEW.sort((a,b)=>{ let x=a[sortKey], y=b[sortKey];
+      if(col.num){ x=Number(x); y=Number(y); if(isNaN(x))x=1e15; if(isNaN(y))y=1e15; return (x-y)*sortDir; }
+      return String(x).localeCompare(String(y))*sortDir; });
+    COLS.forEach(c=>{ const el=document.getElementById('ar-'+c.key); if(el) el.textContent = c.key===sortKey ? (sortDir>0?'▲':'▼') : ''; });
+  }
+
+  function render(){
+    const total=VIEW.length, pages=Math.max(1,Math.ceil(total/perPage));
+    if(page>pages) page=pages;
+    const start=(page-1)*perPage, slice=VIEW.slice(start, start+perPage);
+    const admin=document.body.classList.contains('admin');
+    let html='';
+    slice.forEach(k=>{
+      const rid=k.id;
+      html+='<tr>'+
+        '<td><span class="expand" onclick="toggle(\''+rid+'\')">'+(expanded.has(rid)?'▾':'▸')+'</span></td>'+
+        '<td><span class="mitra">'+esc(k.namaMitra)+'</span></td>'+
+        '<td>'+esc(k.jenisMitra)+'</td>'+
+        '<td>'+esc(k.bentuk)+'</td>'+
+        '<td>'+esc(k.nomorSurat)+'</td>'+
+        '<td>'+esc(k.pengguna)+'</td>'+
+        '<td>'+esc(k.mulai)+'</td>'+
+        '<td>'+esc(k.berakhir)+'</td>'+
+        '<td>'+sisaTxt(k)+'</td>'+
+        '<td>'+badge(k)+'</td>'+
+        '<td>'+(k.file&&String(k.file).indexOf('http')===0?'<a class="link" href="'+esc(k.file)+'" target="_blank">📎</a>':'—')+'</td>'+
+        (admin?'<td class="admincol"><span class="act"><button onclick="editRow(\''+rid+'\')">✏️</button><button class="del" onclick="delRow(\''+rid+'\')">🗑️</button></span></td>':'')+
+      '</tr>';
+      if(expanded.has(rid)){
+        html+='<tr class="detail"><td></td><td colspan="'+(admin?11:10)+'"><div class="grid">'+
+          field('Wilayah', k.wilayah)+field('Ruang Lingkup', k.ruangLingkup)+field('Jabatan Penandatangan', k.jabatan)+
+          field('Biaya', k.biaya?('Rp '+Number(k.biaya).toLocaleString('id-ID')):'-')+
+          field('Masa Berlaku', k.masaBerlaku?(k.masaBerlaku+' tahun'):'-')+field('Jenis Entri', k.jenisEntri)+
+          field('Dokumen Induk', k.dokumenInduk||'-')+field('Catatan', k.catatan||'-')+
+        '</div></td></tr>';
+      }
+    });
+    document.getElementById('body').innerHTML = html || '<tr><td colspan="12" style="text-align:center;padding:24px;color:#64748b">Tidak ada data yang cocok.</td></tr>';
+    document.getElementById('count').textContent = total+' data'+(total!==ALL.length?(' (dari '+ALL.length+')'):'')+' · halaman '+page+'/'+pages;
+    renderPager(pages);
+    updateAdminCols();
+  }
+  function field(l,v){ return '<div><b>'+l+':</b> '+esc(v==null||v===''?'-':v)+'</div>'; }
+
+  function renderPager(pages){
+    let h='<button onclick="goto(1)" '+(page<=1?'disabled':'')+'>«</button>'+
+      '<button onclick="goto('+(page-1)+')" '+(page<=1?'disabled':'')+'>‹ Sebelumnya</button>'+
+      '<span style="font-size:13px;color:#64748b">Hal. '+page+' / '+pages+'</span>'+
+      '<button onclick="goto('+(page+1)+')" '+(page>=pages?'disabled':'')+'>Berikutnya ›</button>'+
+      '<button onclick="goto('+pages+')" '+(page>=pages?'disabled':'')+'>»</button>'+
+      '<select onchange="perPage=+this.value;page=1;render()" style="margin-left:6px"><option value="25">25/hal</option><option value="50">50/hal</option><option value="100">100/hal</option></select>';
+    document.getElementById('pager').innerHTML=h;
+  }
+  function goto(p){ page=p; render(); window.scrollTo({top:0,behavior:'smooth'}); }
+  function toggle(id){ if(expanded.has(id)) expanded.delete(id); else expanded.add(id); render(); }
+
+  // ---- Admin ----
+  function updateAdminCols(){ const on=document.body.classList.contains('admin');
+    document.querySelectorAll('.admincol').forEach(el=>el.style.display=on?'':'none'); }
+  function toggleAdmin(){ if(document.body.classList.contains('admin')){ lockAdmin(); return; }
+    if(!authRequired){ alert('Gerbang sandi tidak aktif (ADMIN_PASSWORD kosong di server). Semua orang bisa mengedit — set ADMIN_PASSWORD untuk mengunci.'); enterAdmin(); return; }
+    if(PW){ enterAdmin(); return; } openModal(); }
+  function openModal(){ document.getElementById('pwMsg').textContent=''; document.getElementById('pwModal').classList.add('on'); setTimeout(()=>document.getElementById('pwInput').focus(),60); }
+  function closeModal(){ document.getElementById('pwModal').classList.remove('on'); }
+  function doLogin(){ const v=document.getElementById('pwInput').value.trim(); if(!v){document.getElementById('pwMsg').textContent='Kata sandi belum diisi';return;}
+    PW=v; sessionStorage.setItem('simkerma_pw',v); document.getElementById('pwInput').value=''; closeModal(); enterAdmin(); }
+  function enterAdmin(){ document.body.classList.add('admin'); document.getElementById('adminbar').classList.add('on'); document.getElementById('adminBtn').textContent='🔓 Admin'; render(); }
+  function lockAdmin(){ document.body.classList.remove('admin'); document.getElementById('adminbar').classList.remove('on'); document.getElementById('adminBtn').textContent='🔒 Admin'; render(); }
+
+  function editRow(id){ location.href='form.html?edit='+encodeURIComponent(id); }
+  async function delRow(id){
+    const k=ALL.find(x=>x.id===id); if(!k) return;
+    if(!confirm('Hapus kerja sama:\n'+k.namaMitra+' — '+k.nomorSurat+' ?\nTindakan ini tidak bisa dibatalkan.')) return;
+    try{
+      const r=await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'deleteKerjasama',id,password:PW})});
+      const res=await r.json();
+      if(res.status==='success'){ ALL=ALL.filter(x=>x.id!==id); applyFilter(); }
+      else if(res.auth){ PW=''; sessionStorage.removeItem('simkerma_pw'); openModal(); document.getElementById('pwMsg').textContent='Sandi salah, coba lagi.'; }
+      else alert('Gagal: '+(res.error||'tidak diketahui'));
+    }catch(e){ alert('Gagal menghapus: '+e.message); }
+  }
+
+  function exportCsv(){
+    const rows=[['Mitra','Jenis Mitra','Wilayah','Bentuk','Nomor Surat','Ruang Lingkup','Pengguna','Jabatan','Biaya','Masa Berlaku','Mulai','Berakhir','Sisa Hari','Status','Jenis Entri','Catatan','Link Berkas']];
+    VIEW.forEach(k=>rows.push([k.namaMitra,k.jenisMitra,k.wilayah,k.bentuk,k.nomorSurat,k.ruangLingkup,k.pengguna,k.jabatan,k.biaya,k.masaBerlaku,k.mulai,k.berakhir,k.sisa,k.status,k.jenisEntri,k.catatan,k.file]));
+    const csv=rows.map(r=>r.map(c=>'"'+String(c==null?'':c).replace(/"/g,'""')+'"').join(',')).join('\n');
+    const blob=new Blob(["﻿"+csv],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='data-kerjasama-'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+  }
+
+  load();
+</script>
+</body>
+</html>

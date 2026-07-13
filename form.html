@@ -49,10 +49,13 @@
 <header>
   <div class="topbar">
     <div></div>
-    <a href="index.html">📊 Dashboard →</a>
+    <div style="display:flex;gap:14px">
+      <a href="index.html">📊 Dashboard</a>
+      <a href="data.html">📋 Data</a>
+    </div>
   </div>
   <div class="wrap">
-    <h1>Input Kerja Sama · SIMKERMA</h1>
+    <h1 id="formTitle">Input Kerja Sama · SIMKERMA</h1>
     <p id="instansi">Sistem Informasi Kerja Sama</p>
   </div>
 </header>
@@ -200,6 +203,7 @@
   const GAS_URL = "__GAS_URL__";
   let DATA = { dataset:{}, mitra:[] };
   let MODE = 'Baru';
+  let EDIT_ID = null;
   const ruangSelected = new Set();
 
   function show(type, text){ const m=document.getElementById('msg'); m.className='msg '+type; m.innerHTML=text; window.scrollTo({top:0,behavior:'smooth'}); }
@@ -230,6 +234,8 @@
       fillMitra();
       setReady(true);
       if(DATA.authRequired && !PW) showGate();
+      const ep=new URLSearchParams(location.search).get('edit');
+      if(ep) loadEditRecord(ep);
     }catch(e){
       setReady(false);
       show('err','Gagal memuat data: '+e.message+'. Pastikan GAS_URL benar & Web App ter-deploy. <a href="#" onclick="location.reload();return false;">Muat ulang</a>');
@@ -366,6 +372,43 @@
     });
   }
 
+  // ── Mode EDIT (admin) — muat data existing lalu isi form ──
+  async function loadEditRecord(id){
+    try{
+      const r=await fetch(GAS_URL+'?action=getKerjasama'); const j=await r.json();
+      const k=(j.data||[]).find(x=>x.id===id);
+      if(!k){ show('err','Data yang diedit tidak ditemukan.'); return; }
+      EDIT_ID=id;
+      setMode(k.jenisEntri==='Perpanjangan'?'Perpanjangan':'Baru');
+      if(k.jenisEntri==='Perpanjangan' && k.idMitra) document.getElementById('mitraSelect').value=k.idMitra;
+      document.getElementById('namaMitra').value=k.namaMitra||'';
+      setSelect('jenisMitra', k.jenisMitra||'');
+      document.getElementById('wilayah').value=k.wilayah||'';
+      const m=(DATA.mitra||[]).find(x=>x.id===k.idMitra);
+      if(m){ document.getElementById('picNama').value=m.picNama||''; document.getElementById('picEmail').value=m.picEmail||''; document.getElementById('picHp').value=m.picHp||''; }
+      setSelect('bentuk', k.bentuk||'');
+      document.getElementById('nomorSurat').value=k.nomorSurat||'';
+      String(k.ruangLingkup||'').split(',').map(s=>s.trim()).filter(Boolean).forEach(v=>{
+        addRuangChip(v); const c=[...document.getElementById('ruangChips').children].find(x=>x.dataset.v===v);
+        if(c){ c.classList.add('on'); ruangSelected.add(v); } });
+      setSelect('pengguna', k.pengguna||'');
+      document.getElementById('jabatan').value=k.jabatan||'';
+      document.getElementById('biaya').value=k.biaya||'';
+      document.getElementById('masaBerlaku').value=k.masaBerlaku||'';
+      document.getElementById('tanggalMulai').value=k.mulai||'';
+      document.getElementById('tanggalBerakhir').value=k.berakhir||'';
+      fillInduk(k.idMitra);
+      if(k.dokumenInduk){ const sel=document.getElementById('dokumenInduk');
+        if(![...sel.options].some(o=>o.value===k.dokumenInduk)){ const o=document.createElement('option'); o.value=k.dokumenInduk; o.textContent=k.dokumenInduk; sel.appendChild(o); }
+        sel.value=k.dokumenInduk; }
+      document.getElementById('catatan').value=k.catatan||'';
+      document.getElementById('formTitle').textContent='Edit Kerja Sama · SIMKERMA';
+      document.getElementById('submitBtn').innerHTML='💾 Perbarui Kerja Sama';
+      show('ok','✏️ <b>Mode edit</b> — mengubah data «'+ (k.namaMitra||'') +'». Ubah seperlunya lalu simpan.');
+      if(DATA.authRequired && !PW) showGate('Masuk admin untuk menyimpan perubahan.');
+    }catch(e){ show('err','Gagal memuat data edit: '+e.message); }
+  }
+
   document.getElementById('form').addEventListener('submit', async (e)=>{
     e.preventDefault();
     const btn=document.getElementById('submitBtn');
@@ -411,15 +454,20 @@
       dokumenInduk:document.getElementById('dokumenInduk').value,
       catatan:document.getElementById('catatan').value.trim(),
       password:PW,
+      editId:EDIT_ID,
       file,
     };
 
     try{
       const r=await fetch(GAS_URL,{ method:'POST', body:JSON.stringify(payload) });
       const res=await r.json();
-      if(res.status==='success'){
+      if(res.status==='success' && res.updated){
         overlay(false);
-        show('ok','✅ Tersimpan! Berlaku s.d. <b>'+(res.tanggalBerakhir||'-')+'</b>. <a href="index.html">Lihat dashboard</a>');
+        show('ok','✅ Perubahan tersimpan. Mengalihkan ke halaman Data…');
+        setTimeout(()=>location.href='data.html', 900);
+      } else if(res.status==='success'){
+        overlay(false);
+        show('ok','✅ Tersimpan! Berlaku s.d. <b>'+(res.tanggalBerakhir||'-')+'</b>. <a href="data.html">Lihat data</a> · <a href="index.html">dashboard</a>');
         document.getElementById('form').reset(); ruangSelected.clear();
         [...document.getElementById('ruangChips').children].forEach(c=>c.classList.remove('on'));
         document.getElementById('mitraSuggest').innerHTML='';

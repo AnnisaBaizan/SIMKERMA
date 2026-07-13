@@ -15,7 +15,7 @@ const SRC  = __dirname;
 const DIST = path.join(__dirname, 'dist');
 if (!fs.existsSync(DIST)) fs.mkdirSync(DIST, { recursive: true });
 
-const HTML_FILES = ['index.html', 'form.html'];
+const HTML_FILES = ['index.html', 'form.html', 'data.html'];
 
 HTML_FILES.forEach(file => {
   const src = path.join(SRC, file);
