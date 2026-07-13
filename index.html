@@ -90,12 +90,12 @@
     document.getElementById('genAt').textContent='Diperbarui: '+(DASH.generatedAt||'');
     const r=DASH.ringkasan;
     document.getElementById('stats').innerHTML =
-      ui.statCard('brand', r.total, 'Total Kerja Sama')+
-      ui.statCard('green', r.aktif, 'Aktif')+
-      ui.statCard('amber', r.segeraBerakhir, 'Segera Berakhir (≤90 hr)')+
-      ui.statCard('red', r.habis, 'Sudah Habis')+
-      ui.statCard('brand', r.totalMitra, 'Jumlah Mitra')+
-      ui.statCard('brand', rupiahShort(r.totalBiaya), 'Total Nilai', SIMKERMA.rupiah(r.totalBiaya));
+      ui.statCard('brand', r.total, 'Total Kerja Sama', '📊')+
+      ui.statCard('green', r.aktif, 'Aktif', '✅')+
+      ui.statCard('amber', r.segeraBerakhir, 'Segera Berakhir (≤90 hr)', '⏰')+
+      ui.statCard('red', r.habis, 'Sudah Habis', '⛔')+
+      ui.statCard('brand', r.totalMitra, 'Jumlah Mitra', '🤝')+
+      ui.statCard('brand', rupiahShort(r.totalBiaya), 'Total Nilai', '💰', SIMKERMA.rupiah(r.totalBiaya));
     renderTL(); renderTerlama(); renderTop();
     // Dua kolom, tiap kolom punya tab diagram sendiri
     mountTabs('tabsA','chartA',[

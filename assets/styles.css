@@ -104,14 +104,19 @@ select{cursor:pointer}
 .mode small{display:block;font-weight:400;font-size:11px;margin-top:4px;opacity:.85}
 
 /* ---------- Stat cards ---------- */
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(184px,1fr));gap:16px;margin-bottom:24px}
+.cards{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-bottom:24px}
+@media(max-width:1024px){.cards{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:560px){.cards{grid-template-columns:repeat(2,1fr)}}
 .stat{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
-  padding:20px 20px 18px;box-shadow:var(--shadow);overflow:hidden;transition:var(--tr)}
+  padding:18px 18px 16px;box-shadow:var(--shadow);overflow:hidden;transition:var(--tr)}
 .stat:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
 .stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);opacity:.85}
 .stat.red::before{background:var(--red)}.stat.amber::before{background:var(--amber)}.stat.green::before{background:var(--green)}.stat.brand::before{background:var(--accent)}
-.stat .n{font-size:26px;font-weight:800;line-height:1.15;letter-spacing:-.02em;color:var(--txt);white-space:nowrap}
-.stat .l{font-size:11px;color:var(--muted);margin-top:8px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;line-height:1.35;min-height:2.4em;display:flex;align-items:flex-end}
+.stat-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.stat .n{font-size:25px;font-weight:800;line-height:1.15;letter-spacing:-.02em;color:var(--txt);white-space:nowrap;min-width:0}
+.stat-ic{flex:none;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:15px;background:var(--accent-soft)}
+.stat.red .stat-ic{background:#fff1f4}.stat.amber .stat-ic{background:#fff7ed}.stat.green .stat-ic{background:#f0fdf4}
+.stat .l{font-size:11px;color:var(--muted);margin-top:10px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;line-height:1.35;min-height:2.4em;display:flex;align-items:flex-end}
 .stat.red .n{color:var(--red)}.stat.amber .n{color:var(--amber)}.stat.green .n{color:var(--green)}.stat.brand .n{color:var(--accent)}
 
 /* ---------- Tables ---------- */
