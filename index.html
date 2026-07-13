@@ -68,6 +68,8 @@
   const ui = SIMKERMA.ui, api = SIMKERMA.api;
   let DASH=null, charts={};
   const PALET=['#4f46e5','#6366f1','#0ea5e9','#f59e0b','#ef4444','#10b981','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16','#06b6d4'];
+  const rupiahShort=n=>{ n=Number(n)||0; const f=(x,s)=>'Rp '+x.toLocaleString('id-ID',{maximumFractionDigits:1})+s;
+    return n>=1e9?f(n/1e9,' M'):n>=1e6?f(n/1e6,' jt'):n>=1e3?f(Math.round(n/1e3),' rb'):('Rp '+n.toLocaleString('id-ID')); };
 
   async function loadDash(){
     document.getElementById('loading').style.display='block';
@@ -93,7 +95,7 @@
       ui.statCard('amber', r.segeraBerakhir, 'Segera Berakhir (≤90 hr)')+
       ui.statCard('red', r.habis, 'Sudah Habis')+
       ui.statCard('brand', r.totalMitra, 'Jumlah Mitra')+
-      ui.statCard('brand', SIMKERMA.rupiah(r.totalBiaya), 'Total Nilai');
+      ui.statCard('brand', rupiahShort(r.totalBiaya), 'Total Nilai', SIMKERMA.rupiah(r.totalBiaya));
     renderTL(); renderTerlama(); renderTop();
     // Dua kolom, tiap kolom punya tab diagram sendiri
     mountTabs('tabsA','chartA',[

@@ -20,8 +20,9 @@
   ui.sectionTitle = function (t) { return '<p class="section-title">' + esc(t) + '</p>'; };
 
   // — Dashboard —
-  ui.statCard = function (cls, n, label) {
-    return '<div class="stat ' + cls + '"><div class="n">' + n + '</div><div class="l">' + esc(label) + '</div></div>';
+  ui.statCard = function (cls, n, label, title) {
+    var t = title ? ' title="' + esc(title) + '"' : '';
+    return '<div class="stat ' + cls + '"' + t + '><div class="n">' + n + '</div><div class="l">' + esc(label) + '</div></div>';
   };
 
   // — Form / detail —
