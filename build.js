@@ -1,4 +1,4 @@
-// build.js — Inject env variables ke file HTML sebelum deploy
+// build.js — Inject env variables & susun output ke dist/ sebelum deploy
 // Dijalankan otomatis oleh Vercel saat build, atau manual: node build.js
 // Catatan: HANYA memakai modul bawaan Node (fs, path) — TIDAK butuh npm install.
 
@@ -13,24 +13,41 @@ if (!GAS_URL) { console.error('ERROR: GAS_URL tidak diset. Set di Vercel atau fi
 
 const SRC  = __dirname;
 const DIST = path.join(__dirname, 'dist');
-if (!fs.existsSync(DIST)) fs.mkdirSync(DIST, { recursive: true });
+const DIST_ASSETS = path.join(DIST, 'assets');
+fs.mkdirSync(DIST_ASSETS, { recursive: true });
 
-// File yang perlu injeksi env (HTML + JS bersama app.js/components.js)
-const INJECT_FILES = ['index.html', 'form.html', 'data.html', 'app.js', 'components.js'];
+const inject = (s) => s
+  .replaceAll('__GAS_URL__',        GAS_URL)
+  .replaceAll('__ADMIN_PASSWORD__', ADMIN_PASSWORD)
+  .replaceAll('__BUG_URL__',        BUG_URL);
 
-INJECT_FILES.forEach(file => {
+// 1) Halaman HTML (root dist) — dengan injeksi env
+['index.html', 'form.html', 'data.html'].forEach(file => {
   const src = path.join(SRC, file);
   if (!fs.existsSync(src)) return;
-  let content = fs.readFileSync(src, 'utf8');
-  content = content.replaceAll('__GAS_URL__',        GAS_URL);
-  content = content.replaceAll('__ADMIN_PASSWORD__', ADMIN_PASSWORD);
-  content = content.replaceAll('__BUG_URL__',        BUG_URL);
-  fs.writeFileSync(path.join(DIST, file), content, 'utf8');
+  fs.writeFileSync(path.join(DIST, file), inject(fs.readFileSync(src, 'utf8')), 'utf8');
   console.log(`✅ ${file} → dist/${file}`);
 });
 
-// Copy aset statis apa adanya (tanpa injeksi)
-['styles.css', 'KOP.png', 'logo.png', 'favicon.ico'].forEach(file => {
+// 2) Aset JS (dist/assets) — dengan injeksi env
+['app.js', 'components.js'].forEach(file => {
+  const src = path.join(SRC, 'assets', file);
+  if (!fs.existsSync(src)) return;
+  fs.writeFileSync(path.join(DIST_ASSETS, file), inject(fs.readFileSync(src, 'utf8')), 'utf8');
+  console.log(`✅ assets/${file} → dist/assets/${file}`);
+});
+
+// 3) Aset statis (dist/assets) — disalin apa adanya
+['styles.css'].forEach(file => {
+  const src = path.join(SRC, 'assets', file);
+  if (fs.existsSync(src)) {
+    fs.copyFileSync(src, path.join(DIST_ASSETS, file));
+    console.log(`📁 assets/${file} → dist/assets/${file}`);
+  }
+});
+
+// 4) Aset root opsional (logo/favicon) bila ada
+['KOP.png', 'logo.png', 'favicon.ico'].forEach(file => {
   const src = path.join(SRC, file);
   if (fs.existsSync(src)) {
     fs.copyFileSync(src, path.join(DIST, file));

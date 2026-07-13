@@ -219,13 +219,14 @@ Reminder bersifat **anti-spam**: tiap baris hanya dikirim sekali per ambang
 ```
 Monitoring-Kerjasama/
 ├── Code.gs            # Backend Google Apps Script (Web App)
-├── styles.css         # Design system bersama (dipakai semua halaman → tampilan seragam)
-├── app.js             # Modul inti: SIMKERMA.{api,esc,header,badge,overlay,gate,msg}
-├── components.js      # Komponen UI granular: SIMKERMA.ui.{statCard,kerjasamaRow,pager,…}
-├── form.html          # Form input/edit (mode Baru/Perpanjangan, ?edit=<id> untuk admin)
 ├── index.html         # Dashboard insight (Chart.js)
+├── form.html          # Form input/edit (mode Baru/Perpanjangan, ?edit=<id> untuk admin)
 ├── data.html          # Tabel data publik (cari/filter/urut/CSV+Excel) + Edit/Hapus admin
-├── build.js           # Inject GAS_URL → dist/ (HTML + app.js + components.js; salin styles.css)
+├── assets/
+│   ├── styles.css     # Design system bersama (semua halaman → tampilan seragam)
+│   ├── app.js         # Modul inti: SIMKERMA.{api,esc,header,badge,overlay,gate,msg}
+│   └── components.js  # Komponen UI granular: SIMKERMA.ui.{statCard,kerjasamaRow,pager,…}
+├── build.js           # Inject GAS_URL → dist/ (HTML root + assets/*.js; salin assets/styles.css)
 ├── vercel.json        # Konfigurasi build statis Vercel
 ├── package.json       # Metadata + script build
 ├── .env.example       # Template environment variable

@@ -4,11 +4,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SIMKERMA — Dashboard Monitoring Kerja Sama</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%236d28d9'/%3E%3Ctext x='16' y='23' font-size='19' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'%3ES%3C/text%3E%3C/svg%3E" />
-<link rel="stylesheet" href="styles.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f46e5'/%3E%3Ctext x='16' y='23' font-size='19' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'%3ES%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="assets/styles.css" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="app.js"></script>
-<script src="components.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/components.js"></script>
 </head>
 <body>
 <header id="appbar"></header>
@@ -62,7 +62,7 @@
 
   const ui = SIMKERMA.ui, api = SIMKERMA.api;
   let DASH=null, charts={};
-  const PALET=['#7c3aed','#6366f1','#0ea5e9','#f59e0b','#ef4444','#10b981','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16','#06b6d4'];
+  const PALET=['#4f46e5','#6366f1','#0ea5e9','#f59e0b','#ef4444','#10b981','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16','#06b6d4'];
 
   async function loadDash(){
     document.getElementById('loading').style.display='block';
@@ -129,8 +129,8 @@
   function barChart(id,obj,line){
     destroy(id); const ctx=document.getElementById(id); const keys=Object.keys(obj||{}); const vals=keys.map(k=>obj[k]);
     charts[id]=new Chart(ctx,{ type:line?'line':'bar',
-      data:{ labels:keys, datasets:[{ data:vals, backgroundColor:line?'rgba(124,58,237,.15)':keys.map((_,i)=>PALET[i%PALET.length]),
-        borderColor:'#7c3aed', borderWidth:line?2:0, fill:!!line, tension:.3 }] },
+      data:{ labels:keys, datasets:[{ data:vals, backgroundColor:line?'rgba(79,70,229,.14)':keys.map((_,i)=>PALET[i%PALET.length]),
+        borderColor:'#4f46e5', borderWidth:line?2:0, fill:!!line, tension:.3 }] },
       options:{ responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,ticks:{precision:0}}} } });
   }
   function pieChart(id,obj){
