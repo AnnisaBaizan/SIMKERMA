@@ -17,6 +17,12 @@ insight dari seluruh data kerja sama.
 Pola arsitektur sama dengan project **SimpelBMN** & **Jum'at Bersih**:
 **Google Apps Script** (backend di Spreadsheet) + **HTML statis** (form & dashboard) di-deploy ke **Vercel**.
 
+**Frontend modular (tanpa framework).** Ketiga halaman berbagi `styles.css` (design system) +
+`app.js` (inti) + `components.js` (komponen granular `SIMKERMA.ui.*`) — sehingga tampilan
+**seragam** dan tiap potongan UI (kartu statistik, baris tabel, badge, pager, gerbang sandi, overlay)
+jadi **komponen yang bisa dipakai ulang**, "seperti component di React" tapi vanilla (tidak perlu
+bundler/React untuk aplikasi statis kecil ini). Ekspor tabel tersedia dalam **Excel (.xlsx)** & CSV.
+
 ---
 
 ## 1. Arsitektur
@@ -213,10 +219,13 @@ Reminder bersifat **anti-spam**: tiap baris hanya dikirim sekali per ambang
 ```
 Monitoring-Kerjasama/
 ├── Code.gs            # Backend Google Apps Script (Web App)
+├── styles.css         # Design system bersama (dipakai semua halaman → tampilan seragam)
+├── app.js             # Modul inti: SIMKERMA.{api,esc,header,badge,overlay,gate,msg}
+├── components.js      # Komponen UI granular: SIMKERMA.ui.{statCard,kerjasamaRow,pager,…}
 ├── form.html          # Form input/edit (mode Baru/Perpanjangan, ?edit=<id> untuk admin)
 ├── index.html         # Dashboard insight (Chart.js)
-├── data.html          # Tabel data publik (cari/filter/urut/CSV) + Edit/Hapus admin
-├── build.js           # Inject GAS_URL → dist/ (Node bawaan, tanpa npm install)
+├── data.html          # Tabel data publik (cari/filter/urut/CSV+Excel) + Edit/Hapus admin
+├── build.js           # Inject GAS_URL → dist/ (HTML + app.js + components.js; salin styles.css)
 ├── vercel.json        # Konfigurasi build statis Vercel
 ├── package.json       # Metadata + script build
 ├── .env.example       # Template environment variable

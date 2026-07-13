@@ -1,0 +1,139 @@
+/* ============================================================
+   SIMKERMA — Design System (dipakai semua halaman biar seragam)
+   Diinject apa adanya oleh build.js ke dist/.
+   ============================================================ */
+:root{
+  --brand:#6d28d9; --brand-d:#5b21b6; --brand-grad-a:#6366f1; --brand-grad-b:#7c3aed;
+  --bg:#f1f5f9; --card:#fff; --line:#e2e8f0; --txt:#1e293b; --muted:#64748b;
+  --red:#dc2626; --amber:#d97706; --green:#16a34a;
+  --radius:12px; --shadow:0 1px 3px rgba(0,0,0,.05);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--txt)}
+a{color:var(--brand-d)}
+.muted{color:var(--muted);font-size:12px}
+.link{color:var(--brand-d);text-decoration:none}.link:hover{text-decoration:underline}
+.wrap{max-width:1180px;margin:auto}
+.wrap.narrow{max-width:760px}
+
+/* ---------- App bar / header ---------- */
+#appbar{background:linear-gradient(135deg,var(--brand-grad-a),var(--brand-grad-b));color:#fff}
+#appbar .bar{display:flex;align-items:center;gap:16px;padding:14px 16px;flex-wrap:wrap}
+#appbar .brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+#appbar .logo{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.2);display:grid;place-items:center;font-weight:800;font-size:18px}
+#appbar .btitle{font-size:18px;font-weight:700;line-height:1.1}
+#appbar .bsub{font-size:12px;opacity:.9}
+#appbar .nav{display:flex;gap:4px;flex-wrap:wrap}
+#appbar .navlink{color:#fff;text-decoration:none;font-size:13px;font-weight:600;padding:7px 12px;border-radius:8px;opacity:.85}
+#appbar .navlink:hover{background:rgba(255,255,255,.12);opacity:1}
+#appbar .navlink.active{background:rgba(255,255,255,.22);opacity:1}
+#appbar .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* ---------- Buttons ---------- */
+.btn{display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-size:13px;font-weight:600;padding:8px 14px;border-radius:8px;border:1px solid transparent;cursor:pointer;text-decoration:none;background:#fff;color:var(--brand-d);white-space:nowrap}
+.btn:hover{filter:brightness(.98)}
+.btn.primary{background:var(--brand);color:#fff}.btn.primary:hover{background:var(--brand-d)}
+.btn.ghost{background:rgba(255,255,255,.15);color:#fff}.btn.ghost:hover{background:rgba(255,255,255,.28)}
+.btn.outline{background:#fff;border-color:var(--line);color:var(--txt)}
+.btn.block{width:100%;justify-content:center;padding:13px;font-size:15px}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn.danger{color:#b91c1c;border-color:#fecaca;background:#fff}
+
+/* ---------- Layout containers ---------- */
+.container{max-width:1180px;margin:16px auto 60px;padding:0 16px}
+.container.narrow{max-width:760px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.section-title{font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:0 0 2px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+.panel h3{margin:0 0 14px;font-size:15px}
+.panel.full{grid-column:1/-1}
+
+/* ---------- Form controls ---------- */
+label{display:block;font-size:13px;font-weight:600;margin:14px 0 5px}
+label .req{color:var(--red)}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;background:#fff;color:var(--txt)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(109,40,217,.15)}
+.row{display:flex;gap:12px;flex-wrap:wrap}.row>div{flex:1;min-width:180px}
+.hint{font-size:11px;color:var(--muted);margin-top:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--line);border-radius:20px;font-size:13px;cursor:pointer;background:#fff}
+.chip.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.new-inline{display:none;margin-top:8px}.new-inline.show{display:block}
+.readonly-note{background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:10px 12px;border-radius:8px;font-size:12px;margin-top:10px}
+.mode{display:flex;gap:10px;margin-bottom:6px}
+.mode button{flex:1;padding:14px;border:2px solid var(--line);background:#fff;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;color:var(--muted);transition:.15s;font-family:inherit}
+.mode button.active{border-color:var(--brand);background:#f5f3ff;color:var(--brand-d)}
+.mode small{display:block;font-weight:400;font-size:11px;margin-top:3px}
+
+/* ---------- Stat cards (dashboard) ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.stat .n{font-size:30px;font-weight:800;line-height:1}
+.stat .l{font-size:12px;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.4px}
+.stat.red .n{color:var(--red)}.stat.amber .n{color:var(--amber)}.stat.green .n{color:var(--green)}.stat.brand .n{color:var(--brand)}
+
+/* ---------- Tables ---------- */
+.tablewrap{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:auto;box-shadow:var(--shadow)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px;background:#f8fafc;position:sticky;top:0;white-space:nowrap;z-index:1}
+th.sortable{cursor:pointer;user-select:none}th .ar{opacity:.5;font-size:10px}
+tbody tr:hover{background:#faf9ff}
+.scroll{max-height:380px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+
+/* ---------- Badges ---------- */
+.badge{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block}
+.b-red{background:#fee2e2;color:#991b1b}.b-amber{background:#fef3c7;color:#92400e}
+.b-green{background:#dcfce7;color:#166534}.b-gray{background:#f1f5f9;color:#475569}
+
+/* ---------- Messages ---------- */
+.msg{padding:12px 14px;border-radius:8px;margin-bottom:14px;font-size:14px;display:none}
+.msg.ok{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;display:block}
+.msg.err{background:#fef2f2;color:#991b1b;border:1px solid #fecaca;display:block}
+
+/* ---------- Spinner / loading ---------- */
+.loading{text-align:center;padding:60px;color:var(--muted)}
+.spin{width:34px;height:34px;border:4px solid var(--line);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+.spinner-lg{width:44px;height:44px;border:4px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- Overlay (proses kirim) ---------- */
+.overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:999;align-items:center;justify-content:center;flex-direction:column;color:#fff;text-align:center;padding:20px}
+.overlay .ovtext{margin-top:16px;font-size:15px;font-weight:700}
+.overlay .ovsub{font-size:12px;opacity:.85;margin-top:5px}
+
+/* ---------- Modal (gate / dialog) ---------- */
+.modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,.7);z-index:1000;align-items:center;justify-content:center;padding:20px}
+.modal.on{display:flex}
+.modal .box{background:#fff;border-radius:14px;padding:24px;max-width:360px;width:100%;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.modal .box h3{margin:8px 0 4px}
+.modal .box .gmsg{color:var(--red);font-size:12px;margin-top:8px;min-height:15px}
+.modal .box .grow{display:flex;gap:8px;margin-top:12px}
+
+/* ---------- Admin bar ---------- */
+.adminbar{background:#f5f3ff;border:1px solid #ddd6fe;color:#5b21b6;padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:12px;display:none;align-items:center;gap:10px}
+.adminbar.on{display:flex}
+
+/* ---------- Pager ---------- */
+.pager{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.pager button{padding:7px 12px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;font-size:13px}
+.pager button:disabled{opacity:.45;cursor:not-allowed}
+
+/* ---------- Toolbar filter ---------- */
+.toolbar{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:14px;box-shadow:var(--shadow)}
+.toolbar .rowf{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.toolbar select,.toolbar input{width:auto}
+.filter-input{width:100%}
+#q{flex:1;min-width:200px}
+.menu{position:relative;display:inline-block}
+.menu .items{display:none;position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.12);z-index:5;min-width:150px;overflow:hidden}
+.menu.open .items{display:block}
+.menu .items button{display:block;width:100%;text-align:left;border:none;background:#fff;padding:9px 12px;font-size:13px;cursor:pointer;color:var(--txt)}
+.menu .items button:hover{background:#f5f3ff}
+
+@media(max-width:640px){
+  #appbar .brand{margin-right:0;width:100%}
+  #appbar .bar{gap:10px}
+}

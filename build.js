@@ -15,9 +15,10 @@ const SRC  = __dirname;
 const DIST = path.join(__dirname, 'dist');
 if (!fs.existsSync(DIST)) fs.mkdirSync(DIST, { recursive: true });
 
-const HTML_FILES = ['index.html', 'form.html', 'data.html'];
+// File yang perlu injeksi env (HTML + JS bersama app.js/components.js)
+const INJECT_FILES = ['index.html', 'form.html', 'data.html', 'app.js', 'components.js'];
 
-HTML_FILES.forEach(file => {
+INJECT_FILES.forEach(file => {
   const src = path.join(SRC, file);
   if (!fs.existsSync(src)) return;
   let content = fs.readFileSync(src, 'utf8');
@@ -28,8 +29,8 @@ HTML_FILES.forEach(file => {
   console.log(`✅ ${file} → dist/${file}`);
 });
 
-// Copy aset statis bila ada
-['KOP.png', 'logo.png', 'favicon.ico'].forEach(file => {
+// Copy aset statis apa adanya (tanpa injeksi)
+['styles.css', 'KOP.png', 'logo.png', 'favicon.ico'].forEach(file => {
   const src = path.join(SRC, file);
   if (fs.existsSync(src)) {
     fs.copyFileSync(src, path.join(DIST, file));
