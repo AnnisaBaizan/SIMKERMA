@@ -73,6 +73,10 @@ h1,h2,h3{letter-spacing:-.01em}
 .panel.full{grid-column:1/-1}
 .chartbox{position:relative;height:300px;margin-top:2px}
 .chartbox canvas{max-width:100%}
+.tabs{display:flex;gap:2px;flex-wrap:wrap;margin:-2px 0 14px;border-bottom:1px solid var(--line)}
+.tab{border:none;background:transparent;font-family:inherit;padding:8px 12px;font-size:12.5px;font-weight:650;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:var(--tr)}
+.tab:hover{color:var(--txt)}
+.tab.active{color:var(--accent-d);border-bottom-color:var(--accent)}
 
 /* ---------- Form controls ---------- */
 label{display:block;font-size:13px;font-weight:600;margin:15px 0 6px;color:#2a2e3a}

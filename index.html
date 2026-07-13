@@ -31,12 +31,17 @@
     </div>
 
     <div class="grid">
-      <div class="panel"><h3>📈 Tren Jumlah Kerja Sama per Tahun</h3><div class="chartbox"><canvas id="chTren"></canvas></div></div>
-      <div class="panel"><h3>🎯 Kerja Sama per Bidang (Ruang Lingkup)</h3><div class="chartbox"><canvas id="chBidang"></canvas></div></div>
-      <div class="panel"><h3>🏥 Per Jenis Mitra</h3><div class="chartbox"><canvas id="chJenis"></canvas></div></div>
-      <div class="panel"><h3>📄 Per Bentuk Kerja Sama</h3><div class="chartbox"><canvas id="chBentuk"></canvas></div></div>
-      <div class="panel"><h3>🎓 Top Pengguna (Prodi/Unit)</h3><div class="chartbox"><canvas id="chPengguna"></canvas></div></div>
-      <div class="panel"><h3>⏳ Distribusi Masa Berlaku (tahun)</h3><div class="chartbox"><canvas id="chMasa"></canvas></div></div>
+      <div class="panel">
+        <div class="tabs" id="tabsA"></div>
+        <div class="chartbox"><canvas id="chartA"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="tabs" id="tabsB"></div>
+        <div class="chartbox"><canvas id="chartB"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:16px">
       <div class="panel">
         <h3>🏆 Mitra Kerja Sama Terlama</h3>
         <div class="scroll" style="max-height:300px"><table>
@@ -90,12 +95,26 @@
       ui.statCard('brand', r.totalMitra, 'Jumlah Mitra')+
       ui.statCard('brand', SIMKERMA.rupiah(r.totalBiaya), 'Total Nilai');
     renderTL(); renderTerlama(); renderTop();
-    barChart('chTren', sortKeys(DASH.trenPerTahun), { line:true });
-    barChart('chBidang', topN(DASH.perBidang,10), { horizontal:true });
-    pieChart('chJenis', topN(DASH.perJenisMitra,8));
-    pieChart('chBentuk', DASH.perBentuk);
-    barChart('chPengguna', topN(DASH.perPengguna,10), { horizontal:true });
-    barChart('chMasa', sortKeys(DASH.distribusiMasaBerlaku), { suffix:' th' });
+    // Dua kolom, tiap kolom punya tab diagram sendiri
+    mountTabs('tabsA','chartA',[
+      { label:'📈 Tren/Tahun',  go:cv=>barChart(cv, sortKeys(DASH.trenPerTahun), { line:true }) },
+      { label:'🎯 Per Bidang',  go:cv=>barChart(cv, topN(DASH.perBidang,10), { horizontal:true }) },
+      { label:'⏳ Masa Berlaku', go:cv=>barChart(cv, sortKeys(DASH.distribusiMasaBerlaku), { suffix:' th' }) },
+    ]);
+    mountTabs('tabsB','chartB',[
+      { label:'🏥 Jenis Mitra',  go:cv=>pieChart(cv, topN(DASH.perJenisMitra,8)) },
+      { label:'📄 Bentuk',       go:cv=>pieChart(cv, DASH.perBentuk) },
+      { label:'🎓 Top Pengguna', go:cv=>barChart(cv, topN(DASH.perPengguna,10), { horizontal:true }) },
+    ]);
+  }
+
+  function mountTabs(barId, canvasId, specs){
+    const bar=document.getElementById(barId);
+    bar.innerHTML=specs.map((s,i)=>'<button class="tab'+(i===0?' active':'')+'" data-i="'+i+'">'+s.label+'</button>').join('');
+    bar.onclick=e=>{ const b=e.target.closest('[data-i]'); if(!b) return;
+      [...bar.children].forEach(c=>c.classList.remove('active')); b.classList.add('active');
+      specs[+b.dataset.i].go(canvasId); };
+    specs[0].go(canvasId);
   }
 
   function renderTL(){
