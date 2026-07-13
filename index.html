@@ -18,6 +18,17 @@
   <div id="content" style="display:none">
     <div class="cards" id="stats"></div>
 
+    <div class="grid" style="margin-bottom:16px">
+      <div class="panel">
+        <div class="tabs" id="tabsA"></div>
+        <div class="chartbox"><canvas id="chartA"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="tabs" id="tabsB"></div>
+        <div class="chartbox"><canvas id="chartB"></canvas></div>
+      </div>
+    </div>
+
     <div class="panel full" style="margin-bottom:16px">
       <h3>⚠️ Perlu Tindak Lanjut — Akan / Sudah Berakhir</h3>
       <input class="filter-input" id="filterTL" placeholder="🔎 Cari mitra / pengguna…" oninput="renderTL()" style="margin-bottom:10px" />
@@ -28,17 +39,6 @@
         </table>
       </div>
       <p class="muted" id="tlCount"></p>
-    </div>
-
-    <div class="grid">
-      <div class="panel">
-        <div class="tabs" id="tabsA"></div>
-        <div class="chartbox"><canvas id="chartA"></canvas></div>
-      </div>
-      <div class="panel">
-        <div class="tabs" id="tabsB"></div>
-        <div class="chartbox"><canvas id="chartB"></canvas></div>
-      </div>
     </div>
 
     <div class="grid" style="margin-top:16px">
