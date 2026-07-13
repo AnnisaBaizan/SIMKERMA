@@ -71,6 +71,8 @@ h1,h2,h3{letter-spacing:-.01em}
 .panel:hover{box-shadow:var(--shadow-md)}
 .panel h3{margin:0 0 16px;font-size:14px;font-weight:650;display:flex;align-items:center;gap:7px}
 .panel.full{grid-column:1/-1}
+.chartbox{position:relative;height:300px;margin-top:2px}
+.chartbox canvas{max-width:100%}
 
 /* ---------- Form controls ---------- */
 label{display:block;font-size:13px;font-weight:600;margin:15px 0 6px;color:#2a2e3a}

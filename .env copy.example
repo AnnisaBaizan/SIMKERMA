@@ -3,7 +3,7 @@
 # Di Vercel: Project Settings → Environment Variables (isi nilai yang sama)
 
 # URL Google Apps Script Web App (didapat setelah deploy GAS sebagai Web App "Anyone")
-GAS_URL=https://script.google.com/macros/s/AKfycby1TCcgf4zpD4Rt7gl9MV3AuD4-u1FefYyx0y194JP_fwgZVKcF98EKX2miMfyJrwb02g/exec
+GAS_URL=https://script.google.com/macros/s/AKfycbzNCJrVVDqQ8AMYcFqOjlt-uTwjDTj4Jsz4Bp1B-D6vuTfq0EPfoQY1uI9QUSAxc7lskA/exec
 
 # (Opsional) Password area admin
 ADMIN_PASSWORD=KerjaSama2026
