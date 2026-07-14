@@ -1,0 +1,110 @@
+  SIMKERMA.header('dashboard', { subtitle:'Dashboard Insight' });
+
+  const ui = SIMKERMA.ui, api = SIMKERMA.api;
+  let DASH=null, charts={};
+  const PALET=['#4f46e5','#6366f1','#0ea5e9','#f59e0b','#ef4444','#10b981','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16','#06b6d4'];
+  const rupiahShort=n=>{ n=Number(n)||0; const f=(x,s)=>'Rp '+x.toLocaleString('id-ID',{maximumFractionDigits:1})+s;
+    return n>=1e9?f(n/1e9,' M'):n>=1e6?f(n/1e6,' jt'):n>=1e3?f(Math.round(n/1e3),' rb'):('Rp '+n.toLocaleString('id-ID')); };
+
+  async function loadDash(){
+    const ld=document.getElementById('loading');
+    ld.style.display='block'; ld.innerHTML=ui.skelDash();
+    document.getElementById('content').style.display='none';
+    try{
+      DASH=await api.get('getDashboard');
+      if(DASH.error) throw new Error(DASH.error);
+      render();
+      ld.style.display='none';
+      document.getElementById('content').style.display='block';
+    }catch(e){
+      ld.innerHTML='<div class="loading">❌ Gagal memuat: '+esc(e.message)+'<br><span class="muted">Pastikan GAS_URL benar & Web App di-deploy "Anyone".</span></div>';
+    }
+  }
+
+  function render(){
+    SIMKERMA.setSub(DASH.instansi||'Dashboard');
+    document.getElementById('genAt').textContent='Diperbarui: '+(DASH.generatedAt||'');
+    const r=DASH.ringkasan;
+    document.getElementById('stats').innerHTML =
+      ui.statCard('brand', r.total, 'Total Kerja Sama', '<i class="fa-solid fa-file-contract"></i>')+
+      ui.statCard('green', r.aktif, 'Aktif', '<i class="fa-solid fa-circle-check"></i>')+
+      ui.statCard('amber', r.segeraBerakhir, 'Segera Berakhir (≤90 hr)', '<i class="fa-solid fa-clock"></i>')+
+      ui.statCard('red', r.habis, 'Sudah Habis', '<i class="fa-solid fa-circle-xmark"></i>')+
+      ui.statCard('brand', r.totalMitra, 'Jumlah Mitra', '<i class="fa-solid fa-handshake"></i>')+
+      ui.statCard('brand', rupiahShort(r.totalBiaya), 'Total Nilai', '<i class="fa-solid fa-money-bill-wave"></i>', SIMKERMA.rupiah(r.totalBiaya));
+    renderTL(); renderTerlama(); renderTop();
+    // Dua kolom, tiap kolom punya tab diagram sendiri
+    mountTabs('tabsA','chartA',[
+      { label:'<i class="fa-solid fa-chart-line"></i> Tren/Tahun',  go:cv=>barChart(cv, sortKeys(DASH.trenPerTahun), { line:true }) },
+      { label:'<i class="fa-solid fa-bullseye"></i> Per Bidang',  go:cv=>barChart(cv, topN(DASH.perBidang,10), { horizontal:true }) },
+      { label:'<i class="fa-solid fa-hourglass-half"></i> Masa Berlaku', go:cv=>barChart(cv, sortKeys(DASH.distribusiMasaBerlaku), { suffix:' th' }) },
+    ]);
+    mountTabs('tabsB','chartB',[
+      { label:'<i class="fa-solid fa-hospital"></i> Jenis Mitra',  go:cv=>pieChart(cv, topN(DASH.perJenisMitra,8)) },
+      { label:'<i class="fa-solid fa-file-lines"></i> Bentuk',       go:cv=>pieChart(cv, DASH.perBentuk) },
+      { label:'<i class="fa-solid fa-graduation-cap"></i> Top Pengguna', go:cv=>barChart(cv, topN(DASH.perPengguna,10), { horizontal:true }) },
+    ]);
+  }
+
+  function mountTabs(barId, canvasId, specs){
+    const bar=document.getElementById(barId);
+    bar.innerHTML=specs.map((s,i)=>'<button class="tab'+(i===0?' active':'')+'" data-i="'+i+'">'+s.label+'</button>').join('');
+    bar.onclick=e=>{ const b=e.target.closest('[data-i]'); if(!b) return;
+      [...bar.children].forEach(c=>c.classList.remove('active')); b.classList.add('active');
+      specs[+b.dataset.i].go(canvasId); };
+    specs[0].go(canvasId);
+  }
+
+  function renderTL(){
+    const q=(document.getElementById('filterTL').value||'').toLowerCase();
+    const all=[...(DASH.akanBerakhir||[]), ...(DASH.sudahHabis||[])];
+    const rows=all.filter(k=>!q || (String(k.namaMitra)+k.pengguna).toLowerCase().includes(q));
+    document.getElementById('tlBody').innerHTML = rows.map(k=>{
+      const b = k.sisa<0 ? '<span class="badge b-red">Habis '+Math.abs(k.sisa)+' hr lalu</span>'
+        : k.sisa<=7 ? '<span class="badge b-red">'+k.sisa+' hari lagi</span>'
+        : k.sisa<=30 ? '<span class="badge b-amber">'+k.sisa+' hari lagi</span>'
+        : '<span class="badge b-green">'+k.sisa+' hari lagi</span>';
+      return '<tr><td><b>'+esc(k.namaMitra)+'</b><br><span class="muted">'+esc(k.jenisMitra)+'</span></td>'+
+        '<td>'+esc(k.bentuk)+'<br><span class="muted">'+esc(k.nomorSurat)+'</span></td>'+
+        '<td>'+esc(k.pengguna)+'</td><td>'+esc(k.berakhir)+'</td><td>'+b+'</td><td>'+ui.fileLink(k.file)+'</td></tr>';
+    }).join('') || ui.emptyRow(6,'Tidak ada yang cocok.');
+    document.getElementById('tlCount').textContent = rows.length+' kerja sama perlu perhatian.';
+  }
+  function renderTerlama(){
+    document.getElementById('terlamaBody').innerHTML=(DASH.mitraTerlama||[]).map(m=>
+      '<tr><td><b>'+esc(m.nama)+'</b><br><span class="muted">'+esc(m.jenis||'')+'</span></td>'+
+      '<td>'+esc(m.sejak)+'</td><td>'+m.lamaTahun+' th</td><td>'+m.jumlah+'</td></tr>').join('') || ui.emptyRow(4,'—');
+  }
+  function renderTop(){
+    document.getElementById('topBody').innerHTML=(DASH.topMitra||[]).map(m=>
+      '<tr><td><b>'+esc(m.nama)+'</b></td><td>'+esc(m.jenis||'')+'</td><td>'+m.jumlah+'</td></tr>').join('') || ui.emptyRow(3,'—');
+  }
+
+  function sortKeys(o){ const x={}; Object.keys(o||{}).sort().forEach(k=>x[k]=o[k]); return x; }
+  function topN(o,n){ const e=Object.entries(o||{}).sort((a,b)=>b[1]-a[1]).slice(0,n); const x={}; e.forEach(([k,v])=>x[k]=v); return x; }
+  function destroy(id){ if(charts[id]) charts[id].destroy(); }
+  const clip=(s,n)=>{ s=String(s); return s.length>n ? s.slice(0,n-1)+'…' : s; };
+  function barChart(id,obj,opts){
+    opts=opts||{}; destroy(id);
+    const keys=Object.keys(obj||{}), vals=keys.map(k=>obj[k]), h=!!opts.horizontal;
+    const disp = h ? keys.map(k=>clip(k,26)) : keys;
+    const valAxis={ beginAtZero:true, ticks:{ precision:0, callback:v=>v+(opts.suffix||'') }, grid:{ color:'#f1f2f6' } };
+    const catAxis={ ticks:{ autoSkip:false, font:{size:11} }, grid:{ display:false } };
+    charts[id]=new Chart(document.getElementById(id),{ type:opts.line?'line':'bar',
+      data:{ labels:disp, datasets:[{ data:vals,
+        backgroundColor: opts.line?'rgba(79,70,229,.14)':keys.map((_,i)=>PALET[i%PALET.length]),
+        borderColor:'#4f46e5', borderWidth:opts.line?2:0, fill:!!opts.line, tension:.35,
+        borderRadius:6, maxBarThickness:h?22:40 }] },
+      options:{ responsive:true, maintainAspectRatio:false, indexAxis:h?'y':'x',
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ title:it=>keys[it[0].dataIndex] } } },
+        scales: h ? { x:valAxis, y:catAxis } : { y:valAxis, x:catAxis } } });
+  }
+  function pieChart(id,obj){
+    destroy(id); const keys=Object.keys(obj||{}), vals=keys.map(k=>obj[k]);
+    charts[id]=new Chart(document.getElementById(id),{ type:'doughnut',
+      data:{ labels:keys.map(k=>clip(k,24)), datasets:[{ data:vals, backgroundColor:keys.map((_,i)=>PALET[i%PALET.length]), borderWidth:2, borderColor:'#fff' }] },
+      options:{ responsive:true, maintainAspectRatio:false, cutout:'62%',
+        plugins:{ legend:{position:'right',labels:{boxWidth:10,font:{size:11},padding:8}}, tooltip:{callbacks:{title:it=>keys[it[0].dataIndex]}} } } });
+  }
+
+  loadDash();

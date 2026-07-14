@@ -29,12 +29,22 @@ const inject = (s) => s
   console.log(`✅ ${file} → dist/${file}`);
 });
 
-// 2) Aset JS (dist/assets) — dengan injeksi env
+// 2) Aset JS inti (dist/assets) — dengan injeksi env
 ['app.js', 'components.js'].forEach(file => {
   const src = path.join(SRC, 'assets', file);
   if (!fs.existsSync(src)) return;
   fs.writeFileSync(path.join(DIST_ASSETS, file), inject(fs.readFileSync(src, 'utf8')), 'utf8');
   console.log(`✅ assets/${file} → dist/assets/${file}`);
+});
+
+// 2b) Controller per-halaman (dist/assets/controllers)
+const DIST_CTRL = path.join(DIST_ASSETS, 'controllers');
+fs.mkdirSync(DIST_CTRL, { recursive: true });
+['dashboard.js', 'form.js', 'data.js'].forEach(file => {
+  const src = path.join(SRC, 'assets', 'controllers', file);
+  if (!fs.existsSync(src)) return;
+  fs.writeFileSync(path.join(DIST_CTRL, file), inject(fs.readFileSync(src, 'utf8')), 'utf8');
+  console.log(`✅ assets/controllers/${file} → dist/assets/controllers/${file}`);
 });
 
 // 3) Aset statis (dist/assets) — disalin apa adanya
