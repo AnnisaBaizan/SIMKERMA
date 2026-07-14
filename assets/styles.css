@@ -1430,3 +1430,28 @@ mark {
   min-width: 172px;
   flex: 0 1 190px
 }
+
+/* ---------- Form: biaya Rp, masa segmen, dropzone, preview ---------- */
+.rp-field{display:flex;align-items:center;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);transition:var(--tr)}
+.rp-field:focus-within{border-color:var(--accent);box-shadow:var(--ring)}
+.rp-field>span{padding:0 2px 0 12px;color:var(--muted);font-weight:600;font-size:14px}
+.rp-field>input{border:none!important;box-shadow:none!important;background:transparent;padding-left:6px}
+.seg{display:inline-flex;flex-wrap:wrap;gap:6px}
+.seg button{min-width:44px;padding:9px 14px;border:1.5px solid var(--line);background:var(--surface);border-radius:9px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:650;color:var(--muted);transition:var(--tr)}
+.seg button:hover{border-color:#d7d8e0;background:#fbfbfe}
+.seg button.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-d);box-shadow:0 1px 3px rgba(79,70,229,.18)}
+.dropzone{border:1.5px dashed #cfd2dc;border-radius:12px;padding:18px;text-align:center;cursor:pointer;transition:var(--tr);background:#fcfcfe}
+.dropzone:hover{border-color:var(--accent);background:var(--accent-soft)}
+.dropzone.over{border-color:var(--accent);background:var(--accent-soft);box-shadow:var(--ring)}
+.dz-empty{color:var(--muted)}
+.dz-empty>i{font-size:24px;color:var(--accent);margin-bottom:8px;display:block}
+.dz-empty b{color:var(--txt)}
+.dz-file{display:flex;align-items:center;gap:12px;text-align:left}
+.dz-file>i{font-size:22px;color:var(--accent)}
+.dz-file .dz-meta{flex:1;min-width:0}
+.dz-file .dz-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dz-over{color:var(--red)}
+.dz-rm{border:none;background:#f1f2f6;width:30px;height:30px;border-radius:8px;cursor:pointer;color:var(--muted);flex:none}
+.dz-rm:hover{background:#fee2e2;color:var(--red)}
+.berlaku-prev{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding:10px 13px;background:var(--accent-soft);border:1px solid #dcdcfb;border-radius:10px;font-size:13px;color:var(--accent-d)}
+.berlaku-prev>i{color:var(--accent)}

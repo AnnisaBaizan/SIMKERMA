@@ -85,7 +85,53 @@ function checkNew(sel, newId) { const box = document.getElementById(newId); if (
 function hitungBerakhir() {
   const mulai = document.getElementById('tanggalMulai').value, masa = parseInt(document.getElementById('masaBerlaku').value, 10), tb = document.getElementById('tanggalBerakhir');
   if (mulai && masa) { const d = new Date(mulai); d.setFullYear(d.getFullYear() + masa); d.setDate(d.getDate() - 1); tb.value = d.toISOString().slice(0, 10); }
+  updateBerlakuPreview();
 }
+
+// Biaya: format ribuan otomatis (tampilan), nilai murni via biayaValue()
+function formatBiaya() { const el = document.getElementById('biaya'); const d = el.value.replace(/\D/g, ''); el.value = d ? Number(d).toLocaleString('id-ID') : ''; }
+function biayaValue() { return Number((document.getElementById('biaya').value || '').replace(/\D/g, '')) || 0; }
+
+// Masa berlaku: tombol segmen 1–5 + "Lain…" (input angka custom)
+function setMasa(val, fromCustom) {
+  const seg = document.getElementById('masaSeg'), custom = document.getElementById('masaCustom'), hidden = document.getElementById('masaBerlaku');
+  const mark = key => [...seg.children].forEach(b => b.classList.toggle('active', b.dataset.m === key));
+  if (val === 'lain') { custom.style.display = ''; mark('lain'); hidden.value = custom.value || ''; setTimeout(() => custom.focus(), 0); hitungBerakhir(); return; }
+  if (fromCustom) { hidden.value = (val || '').replace(/\D/g, ''); mark('lain'); hitungBerakhir(); return; }
+  custom.style.display = 'none'; custom.value = ''; hidden.value = val; mark(val); hitungBerakhir();
+}
+function applyMasa(v) {
+  v = String(v == null ? '' : v).replace(/\D/g, '');
+  if (!v) { setMasa(''); [...document.getElementById('masaSeg').children].forEach(b => b.classList.remove('active')); document.getElementById('masaCustom').style.display = 'none'; document.getElementById('masaBerlaku').value = ''; return; }
+  if (['1', '2', '3', '4', '5'].includes(v)) setMasa(v);
+  else { const c = document.getElementById('masaCustom'); c.style.display = ''; c.value = v; setMasa(v, true); }
+}
+
+// Preview "berlaku s.d. + status" (live)
+function updateBerlakuPreview() {
+  const mulai = document.getElementById('tanggalMulai').value, tb = document.getElementById('tanggalBerakhir').value, prev = document.getElementById('berlakuPrev');
+  if (!prev) return;
+  if (!mulai || !tb) { prev.style.display = 'none'; return; }
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const sisa = Math.round((new Date(tb) - today) / 86400000);
+  let cls = 'b-green', label = 'Aktif'; if (sisa < 0) { cls = 'b-red'; label = 'Sudah habis'; } else if (sisa <= 90) { cls = 'b-amber'; label = 'Segera berakhir'; }
+  const sisaTxt = sisa < 0 ? Math.abs(sisa) + ' hari lalu' : sisa + ' hari lagi';
+  prev.innerHTML = '<i class="fa-solid fa-circle-info"></i> Berlaku s.d. <b>' + tb + '</b> · <span class="badge ' + cls + '">' + label + '</span> <span class="muted">(' + sisaTxt + ')</span>';
+  prev.style.display = 'flex';
+}
+
+// Dropzone: preview & hapus berkas
+function onFilePick() {
+  const f = document.getElementById('file').files[0], empty = document.getElementById('dzEmpty'), box = document.getElementById('dzFile');
+  if (!f) { empty.style.display = ''; box.style.display = 'none'; box.innerHTML = ''; return; }
+  const kb = f.size / 1024, size = kb > 1024 ? (kb / 1024).toFixed(1) + ' MB' : Math.round(kb) + ' KB', over = f.size > 10 * 1024 * 1024;
+  box.innerHTML = '<i class="fa-solid fa-file-lines"></i><div class="dz-meta"><div class="dz-name">' + esc(f.name) + '</div>' +
+    '<div class="hint' + (over ? ' dz-over' : '') + '">' + size + (over ? ' — melebihi 10 MB' : '') + '</div></div>' +
+    '<button type="button" class="dz-rm" onclick="removeFile(event)" title="Hapus"><i class="fa-solid fa-xmark"></i></button>';
+  empty.style.display = 'none'; box.style.display = 'flex';
+}
+function removeFile(e) { if (e) e.stopPropagation(); document.getElementById('file').value = ''; onFilePick(); }
+function clearDropzone() { const inp = document.getElementById('file'); inp.value = ''; onFilePick(); }
 function valSelect(id, newId, out) { const s = document.getElementById(id); if (s.value === '__NEW__') { out.val = document.getElementById(newId).value.trim(); out.isNew = true; return out.val; } out.val = s.value; out.isNew = false; return s.value; }
 function readFile(input) { return new Promise(res => { const f = input.files[0]; if (!f) { res(null); return; } const rd = new FileReader(); rd.onload = () => res({ name: f.name, mime: f.type, data: rd.result }); rd.onerror = () => res(null); rd.readAsDataURL(f); }); }
 
@@ -102,8 +148,13 @@ async function loadEditRecord(id) {
     setSelect('bentuk', k.bentuk || ''); document.getElementById('nomorSurat').value = k.nomorSurat || '';
     String(k.ruangLingkup || '').split(',').map(s => s.trim()).filter(Boolean).forEach(v => { addRuangChip(v); const c = [...document.getElementById('ruangChips').children].find(x => x.dataset.v === v); if (c) { c.classList.add('on'); ruangSelected.add(v); } });
     setSelect('pengguna', k.pengguna || ''); document.getElementById('jabatan').value = k.jabatan || '';
-    document.getElementById('biaya').value = k.biaya || ''; document.getElementById('masaBerlaku').value = k.masaBerlaku || '';
+    document.getElementById('biaya').value = k.biaya || ''; formatBiaya(); applyMasa(k.masaBerlaku);
     document.getElementById('tanggalMulai').value = k.mulai || ''; document.getElementById('tanggalBerakhir').value = k.berakhir || '';
+    updateBerlakuPreview();
+    if (k.file && String(k.file).indexOf('http') === 0) {
+      const box = document.getElementById('dzFile'); document.getElementById('dzEmpty').style.display = 'none'; box.style.display = 'flex';
+      box.innerHTML = '<i class="fa-solid fa-paperclip"></i><div class="dz-meta"><div class="dz-name">Berkas terlampir</div><div class="hint"><a class="link" href="' + esc(k.file) + '" target="_blank">Lihat berkas saat ini</a> — pilih berkas baru untuk mengganti</div></div>';
+    }
     fillInduk(k.idMitra); if (k.dokumenInduk) { const s = document.getElementById('dokumenInduk'); if (![...s.options].some(o => o.value === k.dokumenInduk)) { const o = document.createElement('option'); o.value = k.dokumenInduk; o.textContent = k.dokumenInduk; s.appendChild(o); } s.value = k.dokumenInduk; }
     document.getElementById('catatan').value = k.catatan || '';
     SIMKERMA.setSub('Edit Kerja Sama'); document.getElementById('submitBtn').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Perbarui Kerja Sama';
@@ -120,6 +171,7 @@ document.getElementById('form').addEventListener('submit', async (e) => {
   const ruangNew = [...document.getElementById('ruangChips').children].some(c => c.dataset.new && ruangSelected.has(c.dataset.v));
   if (ruang.length === 0) { show('err', 'Pilih minimal satu Ruang Lingkup.'); return; }
   if (!jenisMitra || !bentuk || !pengguna) { show('err', 'Lengkapi Jenis Mitra, Bentuk, dan Pengguna.'); return; }
+  if (!document.getElementById('masaBerlaku').value) { show('err', 'Pilih atau isi Masa Berlaku (tahun).'); return; }
   if (DATA.authRequired && !gate.pw) { gate.prompt('Masukkan kata sandi untuk menyimpan.', () => document.getElementById('form').requestSubmit(), { mandatory: true }); return; }
 
   const fileInput = document.getElementById('file'), theFile = fileInput.files[0];
@@ -134,7 +186,7 @@ document.getElementById('form').addEventListener('submit', async (e) => {
     picEmail: document.getElementById('picEmail').value.trim(), picHp: document.getElementById('picHp').value.trim(),
     bentuk, bentukBaru: bk.isNew, nomorSurat: document.getElementById('nomorSurat').value.trim(),
     ruangLingkup: ruang.join(', '), ruangLingkupBaru: ruangNew, pengguna, penggunaBaru: pg.isNew,
-    jabatan: document.getElementById('jabatan').value.trim(), biaya: document.getElementById('biaya').value || 0,
+    jabatan: document.getElementById('jabatan').value.trim(), biaya: biayaValue(),
     masaBerlaku: document.getElementById('masaBerlaku').value, tanggalMulai: document.getElementById('tanggalMulai').value,
     tanggalBerakhir: document.getElementById('tanggalBerakhir').value,
     refSebelumnya: MODE === 'Perpanjangan' ? document.getElementById('mitraSelect').value : '',
@@ -150,12 +202,27 @@ document.getElementById('form').addEventListener('submit', async (e) => {
       show('ok', '✅ Tersimpan! Berlaku s.d. <b>' + (res.tanggalBerakhir || '-') + '</b>. <a href="data.html">Lihat data</a> · <a href="index.html">dashboard</a>');
       document.getElementById('form').reset(); ruangSelected.clear();
       [...document.getElementById('ruangChips').children].forEach(c => c.classList.remove('on'));
-      document.getElementById('mitraSuggest').innerHTML = ''; setMode('Baru'); await load();
+      document.getElementById('mitraSuggest').innerHTML = ''; setMode('Baru');
+      applyMasa(''); clearDropzone(); document.getElementById('berlakuPrev').style.display = 'none';
+      await load();
     }
     else if (res.auth) { overlay(false); gate.clear(); gate.prompt('Kata sandi salah. Coba lagi.', () => document.getElementById('form').requestSubmit(), { mandatory: true }); }
     else { overlay(false); show('err', 'Gagal: ' + (res.error || 'tidak diketahui')); }
   } catch (err) { overlay(false); show('err', 'Gagal mengirim: ' + esc(err.message)); }
   finally { overlay(false); btn.disabled = false; if (!EDIT_ID) btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Kerja Sama'; }
 });
+
+// Dropzone: klik untuk pilih + drag & drop
+(function () {
+  const dz = document.getElementById('dropzone'); if (!dz) return; const inp = document.getElementById('file');
+  dz.addEventListener('click', e => { if (e.target.closest('.dz-rm') || e.target.closest('a')) return; inp.click(); });
+  ['dragover', 'dragenter'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('over'); }));
+  ['dragleave', 'dragend'].forEach(ev => dz.addEventListener(ev, e => { if (e.target === dz) dz.classList.remove('over'); }));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('over');
+    const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (!f) return;
+    const dt = new DataTransfer(); dt.items.add(f); inp.files = dt.files; onFilePick();
+  });
+})();
 
 load();

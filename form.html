@@ -22,7 +22,7 @@
 
     <div id="formArea" style="display:none">
       <div class="card">
-        <p class="section-title">Jenis Pengisian</p>
+        <p class="section-title"><i class="fa-solid fa-pen-to-square"></i> Jenis Pengisian</p>
         <div class="mode">
           <button type="button" id="modeBaru" class="active" onclick="setMode('Baru')"><i
               class="fa-solid fa-circle-plus"></i> Kerja Sama Baru<small>Mitra/kesepakatan baru</small></button>
@@ -41,7 +41,7 @@
 
       <form id="form">
         <div class="card">
-          <p class="section-title">Data Mitra</p>
+          <p class="section-title"><i class="fa-solid fa-building-user"></i> Data Mitra</p>
           <label>Nama Mitra Kerja Sama <span class="req">*</span></label>
           <input id="namaMitra" required placeholder="mis. RSUD Palembang BARI" oninput="checkDup()" />
           <div class="hint">Nama lengkap & konsisten — ini kunci pencatatan riwayat.</div>
@@ -65,7 +65,7 @@
         </div>
 
         <div class="card">
-          <p class="section-title">Data Kerja Sama (Dokumen)</p>
+          <p class="section-title"><i class="fa-solid fa-file-signature"></i> Data Kerja Sama (Dokumen)</p>
           <div class="row">
             <div>
               <label>Bentuk Kerja Sama <span class="req">*</span></label>
@@ -100,17 +100,24 @@
           </div>
 
           <div class="row">
-            <div><label>Biaya MoU/PKS (Rp)</label><input id="biaya" type="number" min="0" placeholder="0" /></div>
+            <div>
+              <label>Biaya MoU/PKS (Rp)</label>
+              <div class="rp-field"><span>Rp</span><input id="biaya" type="text" inputmode="numeric" placeholder="0"
+                  oninput="formatBiaya()" /></div>
+            </div>
             <div>
               <label>Masa Berlaku (tahun) <span class="req">*</span></label>
-              <select id="masaBerlaku" required onchange="hitungBerakhir()">
-                <option value="">—</option>
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
-                <option>4</option>
-                <option>5</option>
-              </select>
+              <div class="seg" id="masaSeg">
+                <button type="button" data-m="1" onclick="setMasa('1')">1</button>
+                <button type="button" data-m="2" onclick="setMasa('2')">2</button>
+                <button type="button" data-m="3" onclick="setMasa('3')">3</button>
+                <button type="button" data-m="4" onclick="setMasa('4')">4</button>
+                <button type="button" data-m="5" onclick="setMasa('5')">5</button>
+                <button type="button" data-m="lain" onclick="setMasa('lain')">Lain…</button>
+              </div>
+              <input id="masaCustom" type="number" min="1" placeholder="Jumlah tahun"
+                style="display:none;margin-top:8px" oninput="setMasa(this.value,true)" />
+              <input type="hidden" id="masaBerlaku" />
             </div>
           </div>
 
@@ -118,12 +125,20 @@
             <div><label>Tanggal Mulai <span class="req">*</span></label><input id="tanggalMulai" type="date" required
                 onchange="hitungBerakhir()" /></div>
             <div><label>Tanggal Berakhir <span class="hint">(otomatis, bisa disesuaikan)</span></label><input
-                id="tanggalBerakhir" type="date" /></div>
+                id="tanggalBerakhir" type="date" oninput="updateBerlakuPreview()" /></div>
           </div>
+          <div id="berlakuPrev" class="berlaku-prev" style="display:none"></div>
 
           <label>Lampiran File MoU/PKS (PDF/gambar)</label>
-          <input id="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
-          <div class="hint">Tersimpan di Google Drive & ditautkan ke baris ini. Maks ±10 MB.</div>
+          <div class="dropzone" id="dropzone">
+            <input id="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" hidden onchange="onFilePick()" />
+            <div class="dz-empty" id="dzEmpty">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <div>Seret berkas ke sini atau <b>klik untuk pilih</b></div>
+              <div class="hint">PDF / gambar / dokumen · tersimpan di Google Drive · maks ±10 MB</div>
+            </div>
+            <div class="dz-file" id="dzFile" style="display:none"></div>
+          </div>
 
           <label>Catatan</label>
           <textarea id="catatan" rows="2" placeholder="Info tambahan (mis. status negosiasi)…"></textarea>
