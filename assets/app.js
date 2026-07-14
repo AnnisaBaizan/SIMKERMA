@@ -134,4 +134,55 @@
     m.className = 'msg ' + type; m.innerHTML = html;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  // ---- Searchable select (bungkus <select> native jadi bisa dicari) ----
+  // Nilai tetap tersimpan di <select> asli → kode .value & event 'change' tetap jalan.
+  S.searchSelect = function (sel) {
+    if (!sel) return null;
+    if (sel._ss) { sel._ss.refresh(); return sel._ss; }
+    sel.style.display = 'none';
+    var wrap = document.createElement('div'); wrap.className = 'ss';
+    wrap.innerHTML = '<div class="ss-field"><input class="ss-input" type="text" autocomplete="off" spellcheck="false"/>' +
+      '<span class="ss-caret">▾</span></div><div class="ss-panel"></div>';
+    sel.parentNode.insertBefore(wrap, sel.nextSibling);
+    var input = wrap.querySelector('.ss-input'), panel = wrap.querySelector('.ss-panel'), caret = wrap.querySelector('.ss-caret');
+    input.placeholder = sel.getAttribute('data-ph') || 'Cari / pilih…';
+
+    var api = {
+      items: [], open: false,
+      refresh: function () {
+        this.items = Array.prototype.map.call(sel.options, function (o) { return { v: o.value, l: o.textContent }; });
+        this.sync(); if (this.open) this.render(input.value);
+      },
+      sync: function () {
+        var o = sel.options[sel.selectedIndex];
+        input.value = (o && o.value !== '') ? o.textContent : '';
+      },
+      render: function (q) {
+        q = (q || '').toLowerCase();
+        var cur = sel.value, html = '';
+        this.items.forEach(function (it) {
+          if (q && it.l.toLowerCase().indexOf(q) === -1) return;
+          html += '<div class="ss-opt' + (it.v === cur ? ' active' : '') + '" data-v="' + encodeURIComponent(it.v) + '">' + S.esc(it.l) + '</div>';
+        });
+        panel.innerHTML = html || '<div class="ss-empty">Tidak ada pilihan</div>';
+      },
+      openP: function () { this.open = true; wrap.classList.add('open'); this.render(''); setTimeout(function () { input.select(); }, 0); },
+      closeP: function () { this.open = false; wrap.classList.remove('open'); this.sync(); },
+      pick: function (v) { sel.value = v; sel.dispatchEvent(new Event('change', { bubbles: true })); this.closeP(); }
+    };
+    input.addEventListener('focus', function () { api.openP(); });
+    input.addEventListener('input', function () { if (!api.open) api.openP(); api.render(input.value); });
+    input.addEventListener('keydown', function (e) { if (e.key === 'Escape') { api.closeP(); input.blur(); } });
+    panel.addEventListener('mousedown', function (e) { var o = e.target.closest('.ss-opt'); if (!o) return; e.preventDefault(); api.pick(decodeURIComponent(o.getAttribute('data-v'))); });
+    caret.addEventListener('mousedown', function (e) { e.preventDefault(); if (api.open) { api.closeP(); } else { input.focus(); } });
+    document.addEventListener('mousedown', function (e) { if (api.open && !wrap.contains(e.target)) api.closeP(); });
+
+    sel._ss = api; api.refresh();
+    return api;
+  };
+  // Enhance beberapa select sekaligus (by id). Aman dipanggil berulang (auto-refresh).
+  S.searchify = function (ids) {
+    (ids || []).forEach(function (id) { S.searchSelect(document.getElementById(id)); });
+  };
 })();

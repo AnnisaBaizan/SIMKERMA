@@ -132,6 +132,7 @@
       fillSelect('pengguna', DATA.dataset['Pengguna MoU/PKS']);
       fillRuang(DATA.dataset['Ruang Lingkup']||[]);
       fillMitra(); setReady(true);
+      SIMKERMA.searchify(['jenisMitra','bentuk','pengguna','mitraSelect','dokumenInduk']);
       const ep=new URLSearchParams(location.search).get('edit');
       if(ep) await loadEditRecord(ep);
       if(DATA.authRequired && !gate.pw) requireLogin();   // wajib login sebelum form tampil
@@ -152,7 +153,8 @@
   function addRuangNew(e){ if(e.key!=='Enter') return; e.preventDefault(); const v=e.target.value.trim(); if(!v) return;
     addRuangChip(v); const c=[...document.getElementById('ruangChips').children].find(x=>x.dataset.v===v); c.classList.add('on'); c.dataset.new='1'; ruangSelected.add(v); e.target.value=''; }
   function fillMitra(){ const s=document.getElementById('mitraSelect'); s.innerHTML='<option value="">— pilih mitra —</option>';
-    (DATA.mitra||[]).slice().sort((a,b)=>String(a.nama).localeCompare(b.nama)).forEach(m=>{ const o=document.createElement('option'); o.value=m.id; o.textContent=m.nama+(m.jenis?' ('+m.jenis+')':''); s.appendChild(o); }); }
+    (DATA.mitra||[]).slice().sort((a,b)=>String(a.nama).localeCompare(b.nama)).forEach(m=>{ const o=document.createElement('option'); o.value=m.id; o.textContent=m.nama+(m.jenis?' ('+m.jenis+')':''); s.appendChild(o); });
+    if(s._ss) s._ss.refresh(); }
 
   function setMode(m){ MODE=m; document.getElementById('modeBaru').classList.toggle('active',m==='Baru');
     document.getElementById('modePerpanjangan').classList.toggle('active',m==='Perpanjangan');
@@ -164,7 +166,8 @@
     document.getElementById('mitraSuggest').innerHTML=''; fillInduk(id); }
   function fillInduk(idMitra){ const s=document.getElementById('dokumenInduk'); s.innerHTML='<option value="">— tidak ada / dokumen ini berdiri sendiri —</option>';
     const docs=(DATA.dokByMitra||{})[idMitra]||[]; docs.forEach(d=>{ const o=document.createElement('option'); o.value=d.id; o.textContent=(d.bentuk||'Dokumen')+' — '+(d.nomor||d.id); s.appendChild(o); });
-    document.getElementById('indukHint').textContent = docs.length ? docs.length+' dokumen mitra ini tersedia sebagai induk.' : 'Mitra ini belum punya dokumen lain.'; }
+    document.getElementById('indukHint').textContent = docs.length ? docs.length+' dokumen mitra ini tersedia sebagai induk.' : 'Mitra ini belum punya dokumen lain.';
+    if(s._ss) s._ss.refresh(); }
 
   function normNama(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
   function checkDup(){ const box=document.getElementById('mitraSuggest'); const v=document.getElementById('namaMitra').value.trim(); box.innerHTML=''; if(v.length<4) return;
@@ -173,7 +176,7 @@
     match.forEach((m,i)=>{ const a=document.createElement('a'); a.href='#'; a.textContent=m.nama; a.style.fontWeight='600'; a.onclick=e=>{e.preventDefault();useExisting(m.id);}; box.appendChild(a); if(i<match.length-1) box.appendChild(document.createTextNode(' · ')); });
     box.appendChild(document.createTextNode(' — klik untuk pakai data yang ada (hindari mitra ganda).')); }
   function useExisting(id){ setMode('Perpanjangan'); document.getElementById('mitraSelect').value=id; prefillMitra(); window.scrollTo({top:0,behavior:'smooth'}); }
-  function setSelect(id,val){ const s=document.getElementById(id); if(val && ![...s.options].some(o=>o.value===val)){ const o=document.createElement('option'); o.value=val;o.textContent=val; s.insertBefore(o,s.lastChild); } s.value=val; }
+  function setSelect(id,val){ const s=document.getElementById(id); if(val && ![...s.options].some(o=>o.value===val)){ const o=document.createElement('option'); o.value=val;o.textContent=val; s.insertBefore(o,s.lastChild); } s.value=val; if(s._ss) s._ss.refresh(); }
   function checkNew(sel,newId){ const box=document.getElementById(newId); if(sel.value==='__NEW__'){ box.classList.add('show'); box.required=true; } else { box.classList.remove('show'); box.value=''; } }
   function hitungBerakhir(){ const mulai=document.getElementById('tanggalMulai').value, masa=parseInt(document.getElementById('masaBerlaku').value,10), tb=document.getElementById('tanggalBerakhir');
     if(mulai&&masa){ const d=new Date(mulai); d.setFullYear(d.getFullYear()+masa); d.setDate(d.getDate()-1); tb.value=d.toISOString().slice(0,10); } }

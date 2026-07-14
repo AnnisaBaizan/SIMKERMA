@@ -42,17 +42,18 @@
     return '<tr><td colspan="' + colspan + '" style="text-align:center;padding:24px;color:#64748b">' + esc(text || 'Tidak ada data.') + '</td></tr>';
   };
   // Baris data kerja sama (mode admin menambah kolom aksi)
+  var cell = function (v, cls) { v = (v == null ? '' : String(v)); return '<span class="ell' + (cls ? ' ' + cls : '') + '" title="' + esc(v) + '">' + esc(v) + '</span>'; };
   ui.kerjasamaRow = function (k, admin, isOpen) {
     return '<tr data-id="' + esc(k.id) + '">' +
       '<td><span class="exp" data-exp="' + esc(k.id) + '" style="cursor:pointer;color:var(--brand-d);font-weight:700">' + (isOpen ? '▾' : '▸') + '</span></td>' +
-      '<td><span style="font-weight:600">' + esc(k.namaMitra) + '</span></td>' +
-      '<td>' + esc(k.jenisMitra) + '</td>' +
-      '<td>' + esc(k.bentuk) + '</td>' +
-      '<td>' + esc(k.nomorSurat) + '</td>' +
-      '<td>' + esc(k.pengguna) + '</td>' +
-      '<td>' + esc(k.mulai) + '</td>' +
-      '<td>' + esc(k.berakhir) + '</td>' +
-      '<td>' + ui.sisa(k.sisa) + '</td>' +
+      '<td style="font-weight:600">' + cell(k.namaMitra) + '</td>' +
+      '<td>' + cell(k.jenisMitra, 'ell-sm') + '</td>' +
+      '<td>' + cell(k.bentuk) + '</td>' +
+      '<td class="nowrap">' + esc(k.nomorSurat) + '</td>' +
+      '<td>' + cell(k.pengguna) + '</td>' +
+      '<td class="nowrap">' + esc(k.mulai) + '</td>' +
+      '<td class="nowrap">' + esc(k.berakhir) + '</td>' +
+      '<td class="nowrap">' + ui.sisa(k.sisa) + '</td>' +
       '<td>' + ui.badge(k.status) + '</td>' +
       '<td>' + ui.fileLink(k.file) + '</td>' +
       (admin ? '<td class="admincol"><span style="display:inline-flex;gap:6px">' +

@@ -81,6 +81,7 @@
       return ui.selectFilter(f.id, f.ph, opts);
     }).join('');
     FILTERS.forEach(f=>document.getElementById(f.id).addEventListener('change', applyFilter));
+    SIMKERMA.searchify(FILTERS.map(f=>f.id));
   }
   function renderHead(){
     document.getElementById('head').innerHTML =
@@ -104,7 +105,7 @@
     });
     sortView(); page=1; render();
   }
-  function resetFilter(){ document.getElementById('q').value=''; FILTERS.forEach(f=>{const e=document.getElementById(f.id);if(e)e.value='';}); applyFilter(); }
+  function resetFilter(){ document.getElementById('q').value=''; FILTERS.forEach(f=>{const e=document.getElementById(f.id);if(e){e.value='';if(e._ss)e._ss.sync();}}); applyFilter(); }
 
   function sortView(){
     const col=COLS.find(c=>c.key===sortKey)||{};
