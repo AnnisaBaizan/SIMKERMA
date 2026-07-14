@@ -25,6 +25,7 @@
       <button class="btn primary" id="resetBtn">Reset</button>
     </div>
     <div class="muted" id="count" style="margin-top:10px"></div>
+    <div class="fchips" id="fchips"></div>
   </div>
 
   <div id="loading"></div>
@@ -48,7 +49,7 @@
       '<span class="items"><button data-fmt="xlsx"><i class="fa-solid fa-file-excel" style="color:#15803d"></i> Excel (.xlsx)</button><button data-fmt="csv"><i class="fa-solid fa-file-csv" style="color:#2563eb"></i> CSV</button></span></span>';
 
   const COLS=[
-    {key:'namaMitra',label:'Mitra'},{key:'bentuk',label:'Bentuk'},{key:'pengguna',label:'Pengguna'},
+    {key:'namaMitra',label:'Mitra'},{key:'bentuk',label:'Bentuk',cls:'hide-md'},{key:'pengguna',label:'Pengguna',cls:'hide-md'},
     {key:'berakhir',label:'Berakhir'},{key:'sisa',label:'Sisa',num:true},{key:'status',label:'Status'}
   ];
   const FILTERS=[
@@ -68,7 +69,7 @@
       if(j.error) throw new Error(j.error);
       ALL=(j.data||[]).map(k=>Object.assign(k,{_tahun:String(k.mulai).slice(0,4)}));
       try{ const f=await api.get('getFormData'); authRequired=!!f.authRequired; SIMKERMA.setSub(f.instansi||'Data Kerja Sama'); }catch(e){}
-      buildFilters(); renderHead(); applyFilter();
+      buildFilters(); renderHead(); restoreState(); applyFilter(true);
       ld.style.display='none';
       document.getElementById('content').style.display='block';
     }catch(e){
@@ -87,11 +88,11 @@
   }
   function renderHead(){
     document.getElementById('head').innerHTML =
-      '<th style="width:26px"></th>' + COLS.map(c=>ui.thSort(c.key,c.label)).join('') +
+      '<th style="width:26px"></th>' + COLS.map(c=>ui.thSort(c.key,c.label,c.cls)).join('') +
       '<th>Berkas</th>' + (isAdmin()?'<th class="admincol">Aksi</th>':'');
   }
 
-  function applyFilter(){
+  function applyFilter(keepPage){
     const q=(document.getElementById('q').value||'').toLowerCase();
     const val=id=>{ const e=document.getElementById(id); return e?e.value:''; };
     const fs=val('fStatus'), fj=val('fJenis'), fp=val('fPengguna'), fb=val('fBentuk'), ft=val('fTahun');
@@ -105,9 +106,41 @@
         if(!hay.includes(q)) return false; }
       return true;
     });
-    sortView(); page=1; render();
+    sortView(); if(!keepPage) page=1; render();
   }
   function resetFilter(){ document.getElementById('q').value=''; FILTERS.forEach(f=>{const e=document.getElementById(f.id);if(e){e.value='';if(e._ss)e._ss.sync();}}); applyFilter(); }
+
+  // ---- Ingat state (cari/filter/urut/halaman) ----
+  const LSKEY='simkerma_data_state';
+  function saveState(){
+    try{ localStorage.setItem(LSKEY, JSON.stringify({
+      q:document.getElementById('q').value,
+      f:FILTERS.reduce((o,ff)=>{const e=document.getElementById(ff.id);o[ff.id]=e?e.value:'';return o;},{}),
+      sortKey, sortDir, perPage, page
+    })); }catch(e){}
+  }
+  function restoreState(){
+    let s; try{ s=JSON.parse(localStorage.getItem(LSKEY)||'null'); }catch(e){}
+    if(!s) return;
+    if(s.q!=null) document.getElementById('q').value=s.q;
+    if(s.f) FILTERS.forEach(ff=>{ const e=document.getElementById(ff.id); if(e && s.f[ff.id]){ e.value=s.f[ff.id]; if(e._ss) e._ss.sync(); } });
+    if(s.sortKey){ sortKey=s.sortKey; sortDir=s.sortDir||1; }
+    if(s.perPage) perPage=s.perPage;
+    if(s.page) page=s.page;
+  }
+
+  // ---- Chip filter aktif ----
+  function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+  function renderChips(){
+    const box=document.getElementById('fchips'); if(!box) return;
+    const items=[]; const q=document.getElementById('q').value.trim();
+    if(q) items.push({id:'q',label:'Pencarian',val:q});
+    FILTERS.forEach(f=>{ const e=document.getElementById(f.id); if(e && e.value) items.push({id:f.id,label:cap(f.ph.replace(/^Semua /,'')),val:e.value}); });
+    if(!items.length){ box.innerHTML=''; return; }
+    box.innerHTML='<span class="lbl">Filter aktif:</span>'+
+      items.map(it=>'<span class="fchip">'+esc(it.label)+': <b>'+esc(it.val)+'</b> <button data-clear="'+it.id+'" title="Hapus"><i class="fa-solid fa-xmark"></i></button></span>').join('')+
+      '<span class="fchip clear" data-clear="__all__"><i class="fa-solid fa-broom"></i> Bersihkan semua</span>';
+  }
 
   function sortView(){
     const col=COLS.find(c=>c.key===sortKey)||{};
@@ -125,9 +158,13 @@
     let html='';
     slice.forEach(k=>{ html+=ui.kerjasamaRow(k,admin,expanded.has(k.id)); if(expanded.has(k.id)) html+=ui.detailRow(k,totalCols-1); });
     document.getElementById('body').innerHTML = html || ui.emptyRow(totalCols,'Tidak ada data yang cocok.');
-    document.getElementById('count').textContent = total+' data'+(total!==ALL.length?(' (dari '+ALL.length+')'):'')+' · halaman '+page+'/'+pages;
+    const from=total?start+1:0, to=Math.min(start+perPage,total);
+    document.getElementById('count').innerHTML = total
+      ? 'Menampilkan <b>'+from+'–'+to+'</b> dari <b>'+total+'</b> kerja sama'+(total!==ALL.length?(' <span style="opacity:.8">(difilter dari '+ALL.length+')</span>'):'')
+      : 'Tidak ada data yang cocok.';
     document.getElementById('pager').innerHTML = ui.pager(page,pages);
     const ps=document.getElementById('perPageSel'); if(ps) ps.value=String(perPage);
+    renderChips(); saveState();
   }
 
   // ---- Event delegation (granular, tanpa inline handler) ----
@@ -136,9 +173,19 @@
   document.getElementById('head').addEventListener('click', e=>{ const th=e.target.closest('[data-sort]'); if(!th) return;
     const k=th.dataset.sort; if(sortKey===k) sortDir*=-1; else { sortKey=k; sortDir=1; } sortView(); render(); });
   document.getElementById('body').addEventListener('click', e=>{
-    const ex=e.target.closest('[data-exp]'); if(ex){ const id=ex.dataset.exp; expanded.has(id)?expanded.delete(id):expanded.add(id); render(); return; }
     const ed=e.target.closest('[data-edit]'); if(ed){ location.href='form.html?edit='+encodeURIComponent(ed.dataset.edit); return; }
     const dl=e.target.closest('[data-del]'); if(dl){ delRow(dl.dataset.del); return; }
+    if(e.target.closest('a,button')) return;                      // jangan toggle saat klik tautan/tombol
+    const tr=e.target.closest('tr[data-id]'); if(tr){ const id=tr.dataset.id; expanded.has(id)?expanded.delete(id):expanded.add(id); render(); }
+  });
+  // klik chip filter → hapus filter itu / semua
+  document.getElementById('fchips').addEventListener('click', e=>{
+    const b=e.target.closest('[data-clear]'); if(!b) return;
+    const id=b.dataset.clear;
+    if(id==='__all__'){ resetFilter(); return; }
+    if(id==='q'){ document.getElementById('q').value=''; }
+    else { const el=document.getElementById(id); if(el){ el.value=''; if(el._ss) el._ss.sync(); } }
+    applyFilter();
   });
   document.getElementById('pager').addEventListener('click', e=>{ const b=e.target.closest('[data-goto]'); if(!b||b.disabled) return;
     page=+b.dataset.goto; render(); window.scrollTo({top:0,behavior:'smooth'}); });

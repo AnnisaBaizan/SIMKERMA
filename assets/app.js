@@ -149,7 +149,7 @@
     input.placeholder = sel.getAttribute('data-ph') || 'Cari / pilih…';
 
     var api = {
-      items: [], open: false,
+      items: [], filtered: [], hi: 0, open: false,
       refresh: function () {
         this.items = Array.prototype.map.call(sel.options, function (o) { return { v: o.value, l: o.textContent }; });
         this.sync(); if (this.open) this.render(input.value);
@@ -160,12 +160,21 @@
       },
       render: function (q) {
         q = (q || '').toLowerCase();
-        var cur = sel.value, html = '';
-        this.items.forEach(function (it) {
-          if (q && it.l.toLowerCase().indexOf(q) === -1) return;
-          html += '<div class="ss-opt' + (it.v === cur ? ' active' : '') + '" data-v="' + encodeURIComponent(it.v) + '">' + S.esc(it.l) + '</div>';
-        });
-        panel.innerHTML = html || '<div class="ss-empty">Tidak ada pilihan</div>';
+        this.filtered = this.items.filter(function (it) { return !q || it.l.toLowerCase().indexOf(q) > -1; });
+        var idx = -1; for (var i = 0; i < this.filtered.length; i++) { if (this.filtered[i].v === sel.value) { idx = i; break; } }
+        this.hi = idx > -1 ? idx : 0;
+        this.paint();
+      },
+      paint: function () {
+        var self = this, cur = sel.value;
+        panel.innerHTML = this.filtered.length ? this.filtered.map(function (it, i) {
+          return '<div class="ss-opt' + (it.v === cur ? ' active' : '') + (i === self.hi ? ' hi' : '') + '" data-v="' + encodeURIComponent(it.v) + '">' + S.esc(it.l) + '</div>';
+        }).join('') : '<div class="ss-empty">Tidak ada pilihan</div>';
+      },
+      move: function (d) {
+        if (!this.filtered.length) return;
+        this.hi = Math.max(0, Math.min(this.filtered.length - 1, (this.hi || 0) + d));
+        this.paint(); var el = panel.querySelector('.ss-opt.hi'); if (el) el.scrollIntoView({ block: 'nearest' });
       },
       openP: function () { this.open = true; wrap.classList.add('open'); this.render(''); setTimeout(function () { input.select(); }, 0); },
       closeP: function () { this.open = false; wrap.classList.remove('open'); this.sync(); },
@@ -173,7 +182,12 @@
     };
     input.addEventListener('focus', function () { api.openP(); });
     input.addEventListener('input', function () { if (!api.open) api.openP(); api.render(input.value); });
-    input.addEventListener('keydown', function (e) { if (e.key === 'Escape') { api.closeP(); input.blur(); } });
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); api.open ? api.move(1) : api.openP(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); api.move(-1); }
+      else if (e.key === 'Enter') { if (api.open && api.filtered[api.hi]) { e.preventDefault(); api.pick(api.filtered[api.hi].v); } }
+      else if (e.key === 'Escape') { api.closeP(); input.blur(); }
+    });
     panel.addEventListener('mousedown', function (e) { var o = e.target.closest('.ss-opt'); if (!o) return; e.preventDefault(); api.pick(decodeURIComponent(o.getAttribute('data-v'))); });
     caret.addEventListener('mousedown', function (e) { e.preventDefault(); if (api.open) { api.closeP(); } else { input.focus(); } });
     document.addEventListener('mousedown', function (e) { if (api.open && !wrap.contains(e.target)) api.closeP(); });

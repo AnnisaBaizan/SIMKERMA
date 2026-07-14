@@ -1096,6 +1096,20 @@ tr.detail:hover {
 /* skeleton loading */
 .skel{display:block;background:linear-gradient(90deg,#edeef2 25%,#f6f7fb 37%,#edeef2 63%);background-size:400% 100%;animation:sh 1.4s ease infinite;border-radius:8px}
 @keyframes sh{0%{background-position:100% 50%}100%{background-position:0 50%}}
+/* searchable keyboard highlight */
+.ss-opt.hi{background:var(--accent-soft)}
+/* responsif kolom tabel (kolom sekunder sembunyi di layar kecil → tetap ada di detail) */
+@media(max-width:860px){.hide-md{display:none!important}}
+/* baris tabel bisa diklik untuk expand */
+.tablewrap tbody tr[data-id]{cursor:pointer}
+/* chip filter aktif */
+.fchips{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.fchips .lbl{font-size:12px;color:var(--muted);font-weight:600}
+.fchip{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:var(--accent-d);border:1px solid #dcdcfb;border-radius:999px;padding:4px 5px 4px 11px;font-size:12px;font-weight:600}
+.fchip button{border:none;background:transparent;color:var(--accent-d);cursor:pointer;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:10px;padding:0}
+.fchip button:hover{background:#e0e0fb}
+.fchip.clear{background:transparent;border-color:var(--line);color:var(--muted);cursor:pointer;padding:4px 12px}
+.fchip.clear:hover{border-color:#d7d8e0;color:var(--txt)}
 .tablewrap tr.detail td{vertical-align:top}
 
 /* ---------- Searchable select (SIMKERMA.searchSelect) ---------- */

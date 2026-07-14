@@ -35,8 +35,8 @@
   };
 
   // — Tabel —
-  ui.thSort = function (key, label) {
-    return '<th class="sortable" data-sort="' + key + '">' + esc(label) + ' <span class="ar" id="ar-' + key + '"></span></th>';
+  ui.thSort = function (key, label, cls) {
+    return '<th class="sortable' + (cls ? ' ' + cls : '') + '" data-sort="' + key + '">' + esc(label) + ' <span class="ar" id="ar-' + key + '"></span></th>';
   };
   ui.emptyRow = function (colspan, text) {
     return '<tr><td colspan="' + colspan + '" style="text-align:center;padding:24px;color:#64748b">' + esc(text || 'Tidak ada data.') + '</td></tr>';
@@ -49,8 +49,8 @@
     return '<tr data-id="' + esc(k.id) + '">' +
       '<td><span class="exp" data-exp="' + esc(k.id) + '" style="cursor:pointer;color:var(--accent)"><i class="fa-solid fa-chevron-' + (isOpen ? 'down' : 'right') + '"></i></span></td>' +
       '<td style="font-weight:600">' + cell(k.namaMitra) + '</td>' +
-      '<td>' + cell(k.bentuk) + '</td>' +
-      '<td>' + cell(k.pengguna) + '</td>' +
+      '<td class="hide-md">' + cell(k.bentuk) + '</td>' +
+      '<td class="hide-md">' + cell(k.pengguna) + '</td>' +
       '<td class="nowrap">' + esc(k.berakhir) + '</td>' +
       '<td class="nowrap">' + ui.sisa(k.sisa) + '</td>' +
       '<td>' + ui.badge(k.status) + '</td>' +
