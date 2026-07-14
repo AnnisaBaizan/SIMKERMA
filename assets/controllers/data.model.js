@@ -6,20 +6,26 @@
    ============================================================ */
 (function () {
   var api = SIMKERMA.api, gate = SIMKERMA.gate;
-  var LSKEY = 'simkerma_data_state';
+  var LSKEY = 'simkerma_data_state_v2';
 
   var M = window.DataModel = {
     all: [], view: [],
     q: '', filters: {}, sortKey: 'sisa', sortDir: 1, page: 1, perPage: 25,
     hidden: new Set(), selected: new Set(), expanded: new Set(),
-    // Meta kolom (untuk header/urut/visibilitas). Render sel = urusan View/Controller.
+    // Meta kolom: label, filter ('select'/'year'), cls responsif, num (urut angka), nowrap, hidden (default).
+    // Render sel = urusan View/Controller. Filter dinamis mengikuti kolom yang tampil.
     columns: [
       { key: 'namaMitra', label: 'Mitra' },
-      { key: 'bentuk', label: 'Bentuk', cls: 'hide-md' },
-      { key: 'pengguna', label: 'Pengguna', cls: 'hide-md' },
+      { key: 'jenisMitra', label: 'Jenis Mitra', filter: 'select' },
+      { key: 'bentuk', label: 'Bentuk', filter: 'select', cls: 'hide-md' },
+      { key: 'nomorSurat', label: 'No. Surat', nowrap: true, hidden: true },
+      { key: 'pengguna', label: 'Pengguna', filter: 'select', cls: 'hide-md' },
+      { key: 'wilayah', label: 'Wilayah', filter: 'select', hidden: true },
+      { key: 'mulai', label: 'Mulai', filter: 'year', nowrap: true, hidden: true },
       { key: 'berakhir', label: 'Berakhir', nowrap: true },
       { key: 'sisa', label: 'Sisa', num: true, nowrap: true },
-      { key: 'status', label: 'Status' }
+      { key: 'biaya', label: 'Biaya', num: true, nowrap: true, hidden: true },
+      { key: 'status', label: 'Status', filter: 'select' }
     ],
 
     // ---- Akses data ----
@@ -39,22 +45,26 @@
       return out.sort();
     },
 
-    // ---- Filter + urut → view ----
+    // ---- Filter (generik, mengikuti kolom) + urut → view ----
+    colOf: function (key) { for (var i = 0; i < this.columns.length; i++) if (this.columns[i].key === key) return this.columns[i]; return null; },
+    filterCols: function () { var h = this.hidden; return this.columns.filter(function (c) { return c.filter && !h.has(c.key); }); },
+    yearsList: function () { var s = {}, out = []; this.all.forEach(function (k) { var y = String(k.mulai).slice(0, 4); if (/^\d{4}$/.test(y) && !s[y]) { s[y] = 1; out.push(y); } }); return out.sort().reverse(); },
     compute: function () {
-      var q = this.q, f = this.filters;
+      var q = this.q, f = this.filters, self = this;
       var v = this.all.filter(function (k) {
-        if (f.fStatus && k.status !== f.fStatus) return false;
-        if (f.fJenis && k.jenisMitra !== f.fJenis) return false;
-        if (f.fPengguna && k.pengguna !== f.fPengguna) return false;
-        if (f.fBentuk && k.bentuk !== f.fBentuk) return false;
-        if (f.fTahun && k._tahun !== f.fTahun) return false;
+        for (var key in f) {
+          var val = f[key]; if (!val) continue;
+          var c = self.colOf(key);
+          if (c && c.filter === 'year') { if (String(k.mulai).slice(0, 4) !== val) return false; }
+          else if (String(k[key] == null ? '' : k[key]) !== val) return false;
+        }
         if (q) {
-          var hay = (k.namaMitra + ' ' + k.nomorSurat + ' ' + k.pengguna + ' ' + k.jenisMitra + ' ' + k.bentuk + ' ' + k.ruangLingkup).toLowerCase();
+          var hay = (k.namaMitra + ' ' + k.nomorSurat + ' ' + k.pengguna + ' ' + k.jenisMitra + ' ' + k.bentuk + ' ' + k.ruangLingkup + ' ' + (k.wilayah || '')).toLowerCase();
           if (hay.indexOf(q) < 0) return false;
         }
         return true;
       });
-      var col = this.columns.filter(function (c) { return c.key === M.sortKey; })[0] || {};
+      var col = this.colOf(this.sortKey) || {};
       var dir = this.sortDir;
       v.sort(function (a, b) {
         var x = a[M.sortKey], y = b[M.sortKey];
@@ -80,7 +90,7 @@
 
     // ---- Kolom / seleksi / expand ----
     visibleCols: function () { var h = this.hidden; return this.columns.filter(function (c) { return !h.has(c.key); }); },
-    toggleCol: function (key, show) { show ? this.hidden.delete(key) : this.hidden.add(key); },
+    toggleCol: function (key, show) { if (show) this.hidden.delete(key); else { this.hidden.add(key); delete this.filters[key]; } this.compute(); },
     toggleExpand: function (id) { this.expanded.has(id) ? this.expanded.delete(id) : this.expanded.add(id); },
     toggleSelect: function (id, on) { on ? this.selected.add(id) : this.selected.delete(id); },
     selectView: function (on) { var self = this; this.view.forEach(function (k) { on ? self.selected.add(k.id) : self.selected.delete(k.id); }); },
@@ -136,4 +146,7 @@
       this.compute();
     }
   };
+
+  // Kolom yang default tersembunyi (bila belum ada state tersimpan)
+  M.hidden = new Set(M.columns.filter(function (c) { return c.hidden; }).map(function (c) { return c.key; }));
 })();

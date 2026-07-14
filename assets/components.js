@@ -99,7 +99,6 @@
     };
     return b('«', 1, page <= 1) + b('‹', page - 1, page <= 1) +
       '<span class="muted">Hal. ' + page + ' / ' + pages + '</span>' +
-      b('›', page + 1, page >= pages) + b('»', pages, page >= pages) +
-      '<select id="perPageSel" style="margin-left:6px;width:auto"><option value="25">25/hal</option><option value="50">50/hal</option><option value="100">100/hal</option></select>';
+      b('›', page + 1, page >= pages) + b('»', pages, page >= pages);
   };
 })();

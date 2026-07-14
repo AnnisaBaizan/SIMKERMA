@@ -15,14 +15,6 @@
     '<span class="menu" id="exportMenu"><button class="btn outline" id="exportBtn"><i class="fa-solid fa-file-export"></i> Export <i class="fa-solid fa-caret-down" style="font-size:11px"></i></button>' +
     '<span class="items"><button data-fmt="xlsx"><i class="fa-solid fa-file-excel" style="color:#15803d"></i> Excel (.xlsx)</button><button data-fmt="csv"><i class="fa-solid fa-file-csv" style="color:#2563eb"></i> CSV</button></span></span>';
 
-  const FILTER_DEFS = [
-    { id: 'fStatus', ph: 'Semua status', opts: ['Aktif', 'Segera Berakhir', 'Habis'] },
-    { id: 'fJenis', ph: 'Semua jenis mitra', key: 'jenisMitra' },
-    { id: 'fPengguna', ph: 'Semua pengguna', key: 'pengguna' },
-    { id: 'fBentuk', ph: 'Semua bentuk', key: 'bentuk' },
-    { id: 'fTahun', ph: 'Semua tahun mulai', key: '_tahun' }
-  ];
-
   // ---- View: render sel tabel (highlight pakai M.q) ----
   function hl(s) {
     s = String(s == null ? '' : s); const q = M.q; if (!q) return esc(s);
@@ -30,10 +22,12 @@
     return esc(s.slice(0, i)) + '<mark>' + esc(s.slice(i, i + q.length)) + '</mark>' + esc(s.slice(i + q.length));
   }
   function ell(v) { v = (v == null ? '' : String(v)); return '<span class="ell" title="' + esc(v) + '">' + hl(v) + '</span>'; }
+  function money(n) { return n ? SIMKERMA.rupiah(n) : '<span class="muted">—</span>'; }
   const CELL = {
     namaMitra: k => '<span style="font-weight:600">' + ell(k.namaMitra) + '</span>',
-    bentuk: k => ell(k.bentuk), pengguna: k => ell(k.pengguna),
-    berakhir: k => esc(k.berakhir), sisa: k => ui.sisa(k.sisa), status: k => ui.badge(k.status)
+    jenisMitra: k => ell(k.jenisMitra), bentuk: k => ell(k.bentuk), nomorSurat: k => esc(k.nomorSurat),
+    pengguna: k => ell(k.pengguna), wilayah: k => ell(k.wilayah), mulai: k => esc(k.mulai),
+    berakhir: k => esc(k.berakhir), sisa: k => ui.sisa(k.sisa), biaya: k => money(k.biaya), status: k => ui.badge(k.status)
   };
   function isAdmin() { return document.body.classList.contains('admin'); }
 
@@ -43,22 +37,25 @@
     try {
       await M.loadData();
       try { const f = await SIMKERMA.api.get('getFormData'); authRequired = !!f.authRequired; SIMKERMA.setSub(f.instansi || 'Data Kerja Sama'); } catch (e) { }
-      buildFilters(); M.restore(); syncInputs(); buildColMenu(); render();
+      M.restore(); $('q').value = M.q; renderPerPage(); buildFilters(); buildColMenu(); render();
       ld.style.display = 'none'; $('content').style.display = 'block';
     } catch (e) {
       ld.innerHTML = '<div class="loading">❌ Gagal memuat: ' + esc(e.message) + '<br><span class="muted">Pastikan GAS_URL benar & Web App aktif.</span></div>';
     }
   }
 
-  function buildFilters() {
-    $('filters').innerHTML = FILTER_DEFS.map(f => {
-      let o = f.opts; if (!o) { o = M.uniq(f.key); if (f.key === '_tahun') o = o.filter(v => /^\d{4}$/.test(v)).reverse(); }
-      return ui.selectFilter(f.id, f.ph, o);
-    }).join('');
-    FILTER_DEFS.forEach(f => $(f.id).addEventListener('change', () => { M.setFilter(f.id, $(f.id).value); render(); }));
-    SIMKERMA.searchify(FILTER_DEFS.map(f => f.id));
+  function renderPerPage() {
+    $('perPageTop').innerHTML = 'Tampil <select id="perPageSel">' + [5, 10, 25, 50, 100].map(n => '<option value="' + n + '"' + (n === M.perPage ? ' selected' : '') + '>' + n + '</option>').join('') + '</select> / hal';
   }
-  function syncInputs() { $('q').value = M.q; FILTER_DEFS.forEach(f => { const e = $(f.id); if (e) { e.value = M.filters[f.id] || ''; if (e._ss) e._ss.sync(); } }); }
+  // Filter DINAMIS: satu dropdown per kolom yang tampil & bisa difilter
+  function buildFilters() {
+    const cols = M.filterCols();
+    $('filters').innerHTML = cols.length
+      ? cols.map(c => ui.selectFilter(c.key, 'Semua ' + c.label.toLowerCase(), c.filter === 'year' ? M.yearsList() : M.uniq(c.key))).join('')
+      : '<span class="muted" style="font-size:12px;align-self:center">Aktifkan kolom lewat tombol <b>Kolom</b> untuk memfilter per kolom.</span>';
+    cols.forEach(c => { const e = $(c.key); if (e) { e.value = M.filters[c.key] || ''; e.addEventListener('change', () => { M.setFilter(c.key, e.value); render(); }); } });
+    SIMKERMA.searchify(cols.map(c => c.key));
+  }
 
   // ---- Render (orkestrasi View) ----
   function renderHead() {
@@ -72,7 +69,9 @@
   }
   function rowHtml(k, admin) {
     const open = M.expanded.has(k.id), sel = M.selected.has(k.id);
-    return '<tr data-id="' + esc(k.id) + '"' + (sel ? ' class="selrow"' : '') + '>' +
+    const stCls = k.status === 'Habis' ? 'row-habis' : (k.status === 'Segera Berakhir' ? 'row-segera' : (k.status === 'Aktif' ? 'row-aktif' : ''));
+    const cls = [sel ? 'selrow' : '', stCls].filter(Boolean).join(' ');
+    return '<tr data-id="' + esc(k.id) + '"' + (cls ? ' class="' + cls + '"' : '') + '>' +
       (admin ? '<td class="selcol"><input type="checkbox" class="rsel" data-id="' + esc(k.id) + '"' + (sel ? ' checked' : '') + '></td>' : '') +
       '<td><span class="exp" style="color:var(--accent)"><i class="fa-solid fa-chevron-' + (open ? 'down' : 'right') + '"></i></span></td>' +
       M.visibleCols().map(c => { const cl = [c.cls, c.nowrap ? 'nowrap' : ''].filter(Boolean).join(' '); return '<td' + (cl ? ' class="' + cl + '"' : '') + '>' + CELL[c.key](k) + '</td>'; }).join('') +
@@ -97,11 +96,10 @@
     const ps = $('perPageSel'); if (ps) ps.value = String(M.perPage);
     renderChips(); renderBulk(); M.persist();
   }
-  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
   function renderChips() {
     const box = $('fchips'); const items = [];
     if (M.q) items.push({ id: 'q', label: 'Pencarian', val: M.q });
-    FILTER_DEFS.forEach(f => { if (M.filters[f.id]) items.push({ id: f.id, label: cap(f.ph.replace(/^Semua /, '')), val: M.filters[f.id] }); });
+    M.columns.forEach(c => { if (c.filter && M.filters[c.key]) items.push({ id: c.key, label: c.label, val: M.filters[c.key] }); });
     if (!items.length) { box.innerHTML = ''; return; }
     box.innerHTML = '<span class="lbl">Filter aktif:</span>' +
       items.map(it => '<span class="fchip">' + esc(it.label) + ': <b>' + esc(it.val) + '</b> <button data-clear="' + it.id + '" title="Hapus"><i class="fa-solid fa-xmark"></i></button></span>').join('') +
@@ -123,7 +121,7 @@
 
   // ---- Events (Controller) ----
   $('q').addEventListener('input', () => { M.setSearch($('q').value); render(); });
-  $('resetBtn').addEventListener('click', () => { M.resetFilters(); syncInputs(); render(); });
+  $('resetBtn').addEventListener('click', () => { M.resetFilters(); $('q').value = ''; buildFilters(); render(); });
   $('head').addEventListener('click', e => { const th = e.target.closest('[data-sort]'); if (!th) return; M.setSort(th.dataset.sort); render(); });
   $('head').addEventListener('change', e => { if (e.target.id !== 'selAll') return; M.selectView(e.target.checked); render(); });
   $('body').addEventListener('click', e => {
@@ -135,19 +133,19 @@
   $('body').addEventListener('change', e => { const c = e.target.closest('.rsel'); if (!c) return; M.toggleSelect(c.dataset.id, c.checked); render(); });
   $('fchips').addEventListener('click', e => {
     const b = e.target.closest('[data-clear]'); if (!b) return;
-    if (b.dataset.clear === '__all__') { M.resetFilters(); syncInputs(); render(); return; }
+    if (b.dataset.clear === '__all__') { M.resetFilters(); $('q').value = ''; buildFilters(); render(); return; }
     if (b.dataset.clear === 'q') { M.setSearch(''); $('q').value = ''; }
     else { M.setFilter(b.dataset.clear, ''); const el = $(b.dataset.clear); if (el) { el.value = ''; if (el._ss) el._ss.sync(); } }
     render();
   });
   $('pager').addEventListener('click', e => { const b = e.target.closest('[data-goto]'); if (!b || b.disabled) return; M.setPage(+b.dataset.goto); render(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
-  $('pager').addEventListener('change', e => { if (e.target.id === 'perPageSel') { M.setPerPage(+e.target.value); render(); } });
+  $('perPageTop').addEventListener('change', e => { if (e.target.id === 'perPageSel') { M.setPerPage(+e.target.value); render(); } });
   $('bulkbar').addEventListener('click', e => {
     if (e.target.closest('#bulkClear')) { M.clearSelect(); render(); return; }
     if (e.target.closest('#bulkDel')) bulkDelete();
   });
   $('colItems').addEventListener('click', e => e.stopPropagation());
-  $('colItems').addEventListener('change', e => { const cb = e.target.closest('[data-col]'); if (!cb) return; M.toggleCol(cb.dataset.col, cb.checked); render(); });
+  $('colItems').addEventListener('change', e => { const cb = e.target.closest('[data-col]'); if (!cb) return; M.toggleCol(cb.dataset.col, cb.checked); buildFilters(); render(); });
 
   // ---- Admin ----
   $('adminBtn').addEventListener('click', () => {
