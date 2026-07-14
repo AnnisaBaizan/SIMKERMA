@@ -142,7 +142,6 @@
   }
 
   // Sesi di-reset tiap tab tidak aktif → saat kembali, wajib login lagi (jika perlu sandi).
-  SIMKERMA.onReturn = function(){ if(DATA.authRequired && !gate.pw) requireLogin('Sesi berakhir karena tab tidak aktif. Silakan masuk lagi.'); };
 
   function fillSelect(id,arr){ const s=document.getElementById(id); s.innerHTML='<option value="">— pilih —</option>';
     (arr||[]).forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; s.appendChild(o); });

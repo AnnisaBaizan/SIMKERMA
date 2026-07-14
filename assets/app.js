@@ -73,9 +73,14 @@
   };
 
   // ---- Gerbang kata sandi (self-inject modal) ----
-  // Sesi in-memory (TIDAK persist) — otomatis hilang saat tab tidak aktif (lihat visibilitychange).
+  // Sesi login PERSISTEN 1 hari (localStorage) — sekali login, pindah halaman/edit tak perlu login lagi.
+  var SESI_MS = 24 * 60 * 60 * 1000;
+  function _loadPw() {
+    try { var s = JSON.parse(localStorage.getItem('simkerma_auth') || 'null'); if (s && s.exp > Date.now()) return s.pw; } catch (e) {}
+    return '';
+  }
   S.gate = {
-    pw: '',
+    pw: _loadPw(),
     _m: null, _cb: null, _mandatory: false,
     _ensure: function () {
       if (this._m) return; var self = this;
@@ -92,7 +97,8 @@
       var inp = m.querySelector('.gpw'), msg = m.querySelector('.gmsg');
       function submit() {
         var v = inp.value.trim(); if (!v) { msg.textContent = 'Kata sandi belum diisi'; return; }
-        self.pw = v; inp.value = ''; self.close();
+        self.pw = v; try { localStorage.setItem('simkerma_auth', JSON.stringify({ pw: v, exp: Date.now() + SESI_MS })); } catch (e) {}
+        inp.value = ''; self.close();
         var cb = self._cb; self._cb = null; if (cb) cb();
       }
       m.querySelector('.gok').onclick = submit;
@@ -119,14 +125,8 @@
       var inp = this._m.querySelector('.gpw'); setTimeout(function () { inp.focus(); }, 60);
     },
     close: function () { if (this._m) this._m.classList.remove('on'); },
-    clear: function () { this.pw = ''; }
+    clear: function () { this.pw = ''; try { localStorage.removeItem('simkerma_auth'); } catch (e) {} }
   };
-
-  // Reset sesi login SETIAP tab tidak aktif; panggil hook saat tab aktif kembali.
-  document.addEventListener('visibilitychange', function () {
-    if (document.hidden) { S.gate.clear(); }
-    else if (typeof S.onReturn === 'function') { S.onReturn(); }
-  });
 
   // ---- Pesan inline (butuh elemen #msg) ----
   S.msg = function (type, html) {

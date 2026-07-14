@@ -15,6 +15,7 @@
 <header id="appbar"></header>
 
 <div class="container" style="max-width:1280px">
+  <div id="pageActions" style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px"></div>
   <div class="adminbar" id="adminbar"><i class="fa-solid fa-lock-open"></i> <b>Mode admin aktif</b> — tombol Edit/Hapus muncul di tiap baris. <a href="#" id="lockLink" style="color:#4338ca">Kunci</a></div>
 
   <div class="toolbar">
@@ -41,11 +42,10 @@
 <script>
   const ui=SIMKERMA.ui, api=SIMKERMA.api, gate=SIMKERMA.gate;
   SIMKERMA.header('data', { subtitle:'Data Kerja Sama' });
-  SIMKERMA.setActions(
-    '<button class="btn ghost" id="adminBtn"><i class="fa-solid fa-lock"></i> Admin</button>' +
-    '<span class="menu" id="exportMenu"><button class="btn" id="exportBtn"><i class="fa-solid fa-file-export"></i> Export <i class="fa-solid fa-caret-down" style="font-size:11px"></i></button>' +
-      '<span class="items"><button data-fmt="xlsx"><i class="fa-solid fa-file-excel" style="color:#15803d"></i> Excel (.xlsx)</button><button data-fmt="csv"><i class="fa-solid fa-file-csv" style="color:#2563eb"></i> CSV</button></span></span>'
-  );
+  document.getElementById('pageActions').innerHTML =
+    '<button class="btn outline" id="adminBtn"><i class="fa-solid fa-lock"></i> Admin</button>' +
+    '<span class="menu" id="exportMenu"><button class="btn outline" id="exportBtn"><i class="fa-solid fa-file-export"></i> Export <i class="fa-solid fa-caret-down" style="font-size:11px"></i></button>' +
+      '<span class="items"><button data-fmt="xlsx"><i class="fa-solid fa-file-excel" style="color:#15803d"></i> Excel (.xlsx)</button><button data-fmt="csv"><i class="fa-solid fa-file-csv" style="color:#2563eb"></i> CSV</button></span></span>';
 
   const COLS=[
     {key:'namaMitra',label:'Mitra'},{key:'bentuk',label:'Bentuk'},{key:'pengguna',label:'Pengguna'},
@@ -187,9 +187,6 @@
   document.getElementById('exportBtn').addEventListener('click', e=>{ e.stopPropagation(); menu.classList.toggle('open'); });
   menu.addEventListener('click', e=>{ const b=e.target.closest('[data-fmt]'); if(!b) return; menu.classList.remove('open'); b.dataset.fmt==='xlsx'?exportXlsx():exportCsv(); });
   document.addEventListener('click', ()=>menu.classList.remove('open'));
-
-  // Sesi admin di-reset tiap tab tidak aktif → saat kembali, kunci lagi otomatis.
-  SIMKERMA.onReturn = function(){ if(isAdmin() && !gate.pw){ lockAdmin(); } };
 
   load();
 </script>
