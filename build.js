@@ -40,7 +40,7 @@ const inject = (s) => s
 // 2b) Controller per-halaman (dist/assets/controllers)
 const DIST_CTRL = path.join(DIST_ASSETS, 'controllers');
 fs.mkdirSync(DIST_CTRL, { recursive: true });
-['dashboard.js', 'form.js', 'data.js'].forEach(file => {
+['dashboard.js', 'form.js', 'data.model.js', 'data.js'].forEach(file => {
   const src = path.join(SRC, 'assets', 'controllers', file);
   if (!fs.existsSync(src)) return;
   fs.writeFileSync(path.join(DIST_CTRL, file), inject(fs.readFileSync(src, 'utf8')), 'utf8');
