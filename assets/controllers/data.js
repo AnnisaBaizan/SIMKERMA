@@ -13,7 +13,7 @@
     '<button class="btn outline" id="adminBtn"><i class="fa-solid fa-lock"></i> Admin</button>' +
     '<span class="menu" id="colMenu"><button class="btn outline" id="colBtn"><i class="fa-solid fa-table-columns"></i> Kolom <i class="fa-solid fa-caret-down" style="font-size:11px"></i></button><span class="items" id="colItems"></span></span>' +
     '<span class="menu" id="exportMenu"><button class="btn outline" id="exportBtn"><i class="fa-solid fa-file-export"></i> Export <i class="fa-solid fa-caret-down" style="font-size:11px"></i></button>' +
-      '<span class="items"><button data-fmt="xlsx"><i class="fa-solid fa-file-excel" style="color:#15803d"></i> Excel (.xlsx)</button><button data-fmt="csv"><i class="fa-solid fa-file-csv" style="color:#2563eb"></i> CSV</button></span></span>';
+    '<span class="items"><button data-fmt="xlsx"><i class="fa-solid fa-file-excel" style="color:#15803d"></i> Excel (.xlsx)</button><button data-fmt="csv"><i class="fa-solid fa-file-csv" style="color:#2563eb"></i> CSV</button></span></span>';
 
   const FILTER_DEFS = [
     { id: 'fStatus', ph: 'Semua status', opts: ['Aktif', 'Segera Berakhir', 'Habis'] },
@@ -24,9 +24,11 @@
   ];
 
   // ---- View: render sel tabel (highlight pakai M.q) ----
-  function hl(s) { s = String(s == null ? '' : s); const q = M.q; if (!q) return esc(s);
+  function hl(s) {
+    s = String(s == null ? '' : s); const q = M.q; if (!q) return esc(s);
     const i = s.toLowerCase().indexOf(q); if (i < 0) return esc(s);
-    return esc(s.slice(0, i)) + '<mark>' + esc(s.slice(i, i + q.length)) + '</mark>' + esc(s.slice(i + q.length)); }
+    return esc(s.slice(0, i)) + '<mark>' + esc(s.slice(i, i + q.length)) + '</mark>' + esc(s.slice(i + q.length));
+  }
   function ell(v) { v = (v == null ? '' : String(v)); return '<span class="ell" title="' + esc(v) + '">' + hl(v) + '</span>'; }
   const CELL = {
     namaMitra: k => '<span style="font-weight:600">' + ell(k.namaMitra) + '</span>',
@@ -40,7 +42,7 @@
     const ld = $('loading'); ld.style.display = 'block'; ld.innerHTML = ui.skelData();
     try {
       await M.loadData();
-      try { const f = await SIMKERMA.api.get('getFormData'); authRequired = !!f.authRequired; SIMKERMA.setSub(f.instansi || 'Data Kerja Sama'); } catch (e) {}
+      try { const f = await SIMKERMA.api.get('getFormData'); authRequired = !!f.authRequired; SIMKERMA.setSub(f.instansi || 'Data Kerja Sama'); } catch (e) { }
       buildFilters(); M.restore(); syncInputs(); buildColMenu(); render();
       ld.style.display = 'none'; $('content').style.display = 'block';
     } catch (e) {
@@ -78,7 +80,7 @@
       (admin ? '<td class="admincol"><span style="display:inline-flex;gap:6px">' +
         '<button class="btn outline" data-edit="' + esc(k.id) + '" title="Edit" style="padding:5px 9px"><i class="fa-solid fa-pen"></i></button>' +
         '<button class="btn danger" data-del="' + esc(k.id) + '" title="Hapus" style="padding:5px 9px"><i class="fa-solid fa-trash"></i></button></span></td>' : '') +
-    '</tr>';
+      '</tr>';
   }
   function render() {
     const admin = isAdmin();

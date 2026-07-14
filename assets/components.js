@@ -58,17 +58,17 @@
       (admin ? '<td class="admincol"><span style="display:inline-flex;gap:6px">' +
         '<button class="btn outline" data-edit="' + esc(k.id) + '" title="Edit" style="padding:5px 9px"><i class="fa-solid fa-pen"></i></button>' +
         '<button class="btn danger" data-del="' + esc(k.id) + '" title="Hapus" style="padding:5px 9px"><i class="fa-solid fa-trash"></i></button></span></td>' : '') +
-    '</tr>';
+      '</tr>';
   };
   ui.detailRow = function (k, totalCols) {
     return '<tr class="detail"><td colspan="' + totalCols + '" style="padding:14px 16px 16px 46px">' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px 18px;font-size:12px">' +
-        ui.field('Jenis Mitra', k.jenisMitra) + ui.field('No. Surat', k.nomorSurat) + ui.field('Tanggal Mulai', k.mulai) +
-        ui.field('Wilayah', k.wilayah) + ui.field('Ruang Lingkup', k.ruangLingkup) +
-        ui.field('Jabatan Penandatangan', k.jabatan) + ui.field('Biaya', ui.rupiah(k.biaya)) +
-        ui.field('Masa Berlaku', k.masaBerlaku ? (k.masaBerlaku + ' tahun') : '-') +
-        ui.field('Jenis Entri', k.jenisEntri) + ui.field('Dokumen Induk', k.dokumenInduk) +
-        ui.field('Ref Sebelumnya', k.refSebelumnya) + ui.field('Catatan', k.catatan) +
+      ui.field('Jenis Mitra', k.jenisMitra) + ui.field('No. Surat', k.nomorSurat) + ui.field('Tanggal Mulai', k.mulai) +
+      ui.field('Wilayah', k.wilayah) + ui.field('Ruang Lingkup', k.ruangLingkup) +
+      ui.field('Jabatan Penandatangan', k.jabatan) + ui.field('Biaya', ui.rupiah(k.biaya)) +
+      ui.field('Masa Berlaku', k.masaBerlaku ? (k.masaBerlaku + ' tahun') : '-') +
+      ui.field('Jenis Entri', k.jenisEntri) + ui.field('Dokumen Induk', k.dokumenInduk) +
+      ui.field('Ref Sebelumnya', k.refSebelumnya) + ui.field('Catatan', k.catatan) +
       '</div></td></tr>';
   };
 

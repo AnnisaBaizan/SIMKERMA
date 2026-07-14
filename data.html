@@ -1,47 +1,55 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>SIMKERMA — Data Kerja Sama</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f46e5'/%3E%3Ctext x='16' y='23' font-size='19' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'%3ES%3C/text%3E%3C/svg%3E" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-<link rel="stylesheet" href="assets/styles.css" />
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="assets/app.js"></script>
-<script src="assets/components.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SIMKERMA — Data Kerja Sama</title>
+  <link rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f46e5'/%3E%3Ctext x='16' y='23' font-size='19' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'%3ES%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="assets/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="assets/app.js"></script>
+  <script src="assets/components.js"></script>
 </head>
+
 <body>
-<header id="appbar"></header>
+  <header id="appbar"></header>
 
-<div class="container" style="max-width:1280px">
-  <div id="pageActions" style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px"></div>
-  <div class="adminbar" id="adminbar"><i class="fa-solid fa-lock-open"></i> <b>Mode admin aktif</b> — tombol Edit/Hapus muncul di tiap baris. <a href="#" id="lockLink" style="color:#4338ca">Kunci</a></div>
-  <div class="bulkbar" id="bulkbar" style="display:none"></div>
+  <div class="container" style="max-width:1280px">
+    <div id="pageActions" style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px"></div>
+    <div class="adminbar" id="adminbar"><i class="fa-solid fa-lock-open"></i> <b>Mode admin aktif</b> — tombol
+      Edit/Hapus muncul di tiap baris. <a href="#" id="lockLink" style="color:#4338ca">Kunci</a></div>
+    <div class="bulkbar" id="bulkbar" style="display:none"></div>
 
-  <div class="toolbar">
-    <div class="rowf">
-      <input id="q" class="filter-input" placeholder="Cari mitra, nomor surat, pengguna, jenis…" />
-      <span id="filters"></span>
-      <button class="btn primary" id="resetBtn">Reset</button>
+    <div class="toolbar">
+      <div class="rowf">
+        <input id="q" class="filter-input" placeholder="Cari mitra, nomor surat, pengguna, jenis…" />
+        <span id="filters"></span>
+        <button class="btn primary" id="resetBtn">Reset</button>
+      </div>
+      <div class="muted" id="count" style="margin-top:10px"></div>
+      <div class="fchips" id="fchips"></div>
     </div>
-    <div class="muted" id="count" style="margin-top:10px"></div>
-    <div class="fchips" id="fchips"></div>
+
+    <div id="loading"></div>
+    <div id="content" style="display:none">
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr id="head"></tr>
+          </thead>
+          <tbody id="body"></tbody>
+        </table>
+      </div>
+      <div class="pager" id="pager"></div>
+    </div>
   </div>
 
-  <div id="loading"></div>
-  <div id="content" style="display:none">
-    <div class="tablewrap">
-      <table>
-        <thead><tr id="head"></tr></thead>
-        <tbody id="body"></tbody>
-      </table>
-    </div>
-    <div class="pager" id="pager"></div>
-  </div>
-</div>
-
-<script src="assets/controllers/data.model.js"></script>
-<script src="assets/controllers/data.js"></script>
+  <script src="assets/controllers/data.model.js"></script>
+  <script src="assets/controllers/data.js"></script>
 </body>
+
 </html>

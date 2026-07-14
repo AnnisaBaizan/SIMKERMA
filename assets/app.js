@@ -43,12 +43,12 @@
     }).join('');
     host.innerHTML =
       '<div class="wrap bar">' +
-        '<div class="brand"><span class="logo">S</span><div>' +
-          '<div class="btitle">' + (opts.title || 'SIMKERMA') + '</div>' +
-          '<div class="bsub" id="appsub">' + (opts.subtitle || 'Monitoring Masa Berlaku Kerja Sama') + '</div>' +
-        '</div></div>' +
-        '<nav class="nav">' + links + '</nav>' +
-        '<div class="actions" id="page-actions"></div>' +
+      '<div class="brand"><span class="logo">S</span><div>' +
+      '<div class="btitle">' + (opts.title || 'SIMKERMA') + '</div>' +
+      '<div class="bsub" id="appsub">' + (opts.subtitle || 'Monitoring Masa Berlaku Kerja Sama') + '</div>' +
+      '</div></div>' +
+      '<nav class="nav">' + links + '</nav>' +
+      '<div class="actions" id="page-actions"></div>' +
       '</div>';
   };
   S.setSub = function (t) { var e = document.getElementById('appsub'); if (e && t) e.textContent = t; };
@@ -76,7 +76,7 @@
   // Sesi login PERSISTEN 1 hari (localStorage) — sekali login, pindah halaman/edit tak perlu login lagi.
   var SESI_MS = 24 * 60 * 60 * 1000;
   function _loadPw() {
-    try { var s = JSON.parse(localStorage.getItem('simkerma_auth') || 'null'); if (s && s.exp > Date.now()) return s.pw; } catch (e) {}
+    try { var s = JSON.parse(localStorage.getItem('simkerma_auth') || 'null'); if (s && s.exp > Date.now()) return s.pw; } catch (e) { }
     return '';
   }
   S.gate = {
@@ -88,16 +88,16 @@
       m.innerHTML = '<div class="box">' +
         '<div class="gload"><div class="spin"></div><div class="gloadtext">Memuat…</div></div>' +
         '<div class="gmain"><div class="glock"><i class="fa-solid fa-lock"></i></div>' +
-          '<h3>Masuk Admin</h3><p class="muted gsub">Kata sandi untuk menambah/ubah/hapus data.</p>' +
-          '<input type="password" class="gpw" placeholder="Kata sandi" autocomplete="current-password"/>' +
-          '<div class="gmsg"></div>' +
-          '<div class="grow"><button class="btn outline gcancel" style="flex:1">Batal</button>' +
-          '<button class="btn primary gok" style="flex:1">Masuk</button></div></div></div>';
+        '<h3>Masuk Admin</h3><p class="muted gsub">Kata sandi untuk menambah/ubah/hapus data.</p>' +
+        '<input type="password" class="gpw" placeholder="Kata sandi" autocomplete="current-password"/>' +
+        '<div class="gmsg"></div>' +
+        '<div class="grow"><button class="btn outline gcancel" style="flex:1">Batal</button>' +
+        '<button class="btn primary gok" style="flex:1">Masuk</button></div></div></div>';
       document.body.appendChild(m); this._m = m;
       var inp = m.querySelector('.gpw'), msg = m.querySelector('.gmsg');
       function submit() {
         var v = inp.value.trim(); if (!v) { msg.textContent = 'Kata sandi belum diisi'; return; }
-        self.pw = v; try { localStorage.setItem('simkerma_auth', JSON.stringify({ pw: v, exp: Date.now() + SESI_MS })); } catch (e) {}
+        self.pw = v; try { localStorage.setItem('simkerma_auth', JSON.stringify({ pw: v, exp: Date.now() + SESI_MS })); } catch (e) { }
         inp.value = ''; self.close();
         var cb = self._cb; self._cb = null; if (cb) cb();
       }
@@ -125,7 +125,7 @@
       var inp = this._m.querySelector('.gpw'); setTimeout(function () { inp.focus(); }, 60);
     },
     close: function () { if (this._m) this._m.classList.remove('on'); },
-    clear: function () { this.pw = ''; try { localStorage.removeItem('simkerma_auth'); } catch (e) {} }
+    clear: function () { this.pw = ''; try { localStorage.removeItem('simkerma_auth'); } catch (e) { } }
   };
 
   // ---- Pesan inline (butuh elemen #msg) ----

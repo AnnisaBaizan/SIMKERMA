@@ -102,7 +102,7 @@
         return api.post({ action: 'deleteKerjasama', id: id, password: gate.pw }).then(function (res) {
           if (res.status === 'success') { ok++; M.all = M.all.filter(function (x) { return x.id !== id; }); M.selected.delete(id); }
           else if (res.auth) authFail = true;
-        }).catch(function () {}).then(function () { if (onProgress) onProgress(i, ids.length); return next(); });
+        }).catch(function () { }).then(function () { if (onProgress) onProgress(i, ids.length); return next(); });
       }
       return next().then(function (r) { M.compute(); return r; });
     },
@@ -122,10 +122,10 @@
           q: this.q, f: this.filters, sortKey: this.sortKey, sortDir: this.sortDir,
           perPage: this.perPage, page: this.page, hidden: Array.from(this.hidden)
         }));
-      } catch (e) {}
+      } catch (e) { }
     },
     restore: function () {
-      var s; try { s = JSON.parse(localStorage.getItem(LSKEY) || 'null'); } catch (e) {}
+      var s; try { s = JSON.parse(localStorage.getItem(LSKEY) || 'null'); } catch (e) { }
       if (!s) return;
       if (s.q != null) this.q = s.q;
       if (s.f) this.filters = s.f;

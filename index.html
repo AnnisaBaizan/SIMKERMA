@@ -1,67 +1,100 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>SIMKERMA — Dashboard Monitoring Kerja Sama</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f46e5'/%3E%3Ctext x='16' y='23' font-size='19' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'%3ES%3C/text%3E%3C/svg%3E" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-<link rel="stylesheet" href="assets/styles.css" />
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="assets/app.js"></script>
-<script src="assets/components.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SIMKERMA — Dashboard Monitoring Kerja Sama</title>
+  <link rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f46e5'/%3E%3Ctext x='16' y='23' font-size='19' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'%3ES%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="assets/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="assets/app.js"></script>
+  <script src="assets/components.js"></script>
 </head>
+
 <body>
-<header id="appbar"></header>
+  <header id="appbar"></header>
 
-<div class="container">
-  <div id="loading"></div>
-  <div id="content" style="display:none">
-    <div class="cards" id="stats"></div>
+  <div class="container">
+    <div id="loading"></div>
+    <div id="content" style="display:none">
+      <div class="cards" id="stats"></div>
 
-    <div class="grid" style="margin-bottom:16px">
-      <div class="panel">
-        <div class="tabs" id="tabsA"></div>
-        <div class="chartbox"><canvas id="chartA"></canvas></div>
+      <div class="grid" style="margin-bottom:16px">
+        <div class="panel">
+          <div class="tabs" id="tabsA"></div>
+          <div class="chartbox"><canvas id="chartA"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="tabs" id="tabsB"></div>
+          <div class="chartbox"><canvas id="chartB"></canvas></div>
+        </div>
       </div>
-      <div class="panel">
-        <div class="tabs" id="tabsB"></div>
-        <div class="chartbox"><canvas id="chartB"></canvas></div>
+
+      <div class="panel full" style="margin-bottom:16px">
+        <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--amber)"></i> Perlu Tindak Lanjut — Akan /
+          Sudah Berakhir</h3>
+        <input class="filter-input" id="filterTL" placeholder="Cari mitra / pengguna…" oninput="renderTL()"
+          style="margin-bottom:10px" />
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Mitra</th>
+                <th>Bentuk / No. Surat</th>
+                <th>Pengguna</th>
+                <th>Berakhir</th>
+                <th>Status</th>
+                <th>Berkas</th>
+              </tr>
+            </thead>
+            <tbody id="tlBody"></tbody>
+          </table>
+        </div>
+        <p class="muted" id="tlCount"></p>
       </div>
+
+      <div class="grid" style="margin-top:16px">
+        <div class="panel">
+          <h3><i class="fa-solid fa-trophy" style="color:var(--amber)"></i> Mitra Kerja Sama Terlama</h3>
+          <div class="scroll" style="max-height:300px">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mitra</th>
+                  <th>Sejak</th>
+                  <th>Lama</th>
+                  <th>Jml</th>
+                </tr>
+              </thead>
+              <tbody id="terlamaBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>🤝 Mitra dengan Kerja Sama Terbanyak</h3>
+          <div class="scroll" style="max-height:300px">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mitra</th>
+                  <th>Jenis</th>
+                  <th>Jml MoU/PKS</th>
+                </tr>
+              </thead>
+              <tbody id="topBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <p class="muted" id="genAt" style="text-align:center;margin-top:24px"></p>
     </div>
-
-    <div class="panel full" style="margin-bottom:16px">
-      <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--amber)"></i> Perlu Tindak Lanjut — Akan / Sudah Berakhir</h3>
-      <input class="filter-input" id="filterTL" placeholder="Cari mitra / pengguna…" oninput="renderTL()" style="margin-bottom:10px" />
-      <div class="scroll">
-        <table>
-          <thead><tr><th>Mitra</th><th>Bentuk / No. Surat</th><th>Pengguna</th><th>Berakhir</th><th>Status</th><th>Berkas</th></tr></thead>
-          <tbody id="tlBody"></tbody>
-        </table>
-      </div>
-      <p class="muted" id="tlCount"></p>
-    </div>
-
-    <div class="grid" style="margin-top:16px">
-      <div class="panel">
-        <h3><i class="fa-solid fa-trophy" style="color:var(--amber)"></i> Mitra Kerja Sama Terlama</h3>
-        <div class="scroll" style="max-height:300px"><table>
-          <thead><tr><th>Mitra</th><th>Sejak</th><th>Lama</th><th>Jml</th></tr></thead>
-          <tbody id="terlamaBody"></tbody>
-        </table></div>
-      </div>
-      <div class="panel">
-        <h3>🤝 Mitra dengan Kerja Sama Terbanyak</h3>
-        <div class="scroll" style="max-height:300px"><table>
-          <thead><tr><th>Mitra</th><th>Jenis</th><th>Jml MoU/PKS</th></tr></thead>
-          <tbody id="topBody"></tbody>
-        </table></div>
-      </div>
-    </div>
-    <p class="muted" id="genAt" style="text-align:center;margin-top:24px"></p>
   </div>
-</div>
 
-<script src="assets/controllers/dashboard.js"></script>
+  <script src="assets/controllers/dashboard.js"></script>
 </body>
+
 </html>
