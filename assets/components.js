@@ -60,8 +60,8 @@
         '<button class="btn danger" data-del="' + esc(k.id) + '" title="Hapus" style="padding:5px 9px"><i class="fa-solid fa-trash"></i></button></span></td>' : '') +
     '</tr>';
   };
-  ui.detailRow = function (k, colspan) {
-    return '<tr class="detail"><td></td><td colspan="' + colspan + '" style="background:#faf9ff">' +
+  ui.detailRow = function (k, totalCols) {
+    return '<tr class="detail"><td colspan="' + totalCols + '" style="padding:14px 16px 16px 46px">' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px 18px;font-size:12px">' +
         ui.field('Jenis Mitra', k.jenisMitra) + ui.field('No. Surat', k.nomorSurat) + ui.field('Tanggal Mulai', k.mulai) +
         ui.field('Wilayah', k.wilayah) + ui.field('Ruang Lingkup', k.ruangLingkup) +

@@ -17,6 +17,7 @@
 <div class="container" style="max-width:1280px">
   <div id="pageActions" style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px"></div>
   <div class="adminbar" id="adminbar"><i class="fa-solid fa-lock-open"></i> <b>Mode admin aktif</b> — tombol Edit/Hapus muncul di tiap baris. <a href="#" id="lockLink" style="color:#4338ca">Kunci</a></div>
+  <div class="bulkbar" id="bulkbar" style="display:none"></div>
 
   <div class="toolbar">
     <div class="rowf">
@@ -45,13 +46,24 @@
   SIMKERMA.header('data', { subtitle:'Data Kerja Sama' });
   document.getElementById('pageActions').innerHTML =
     '<button class="btn outline" id="adminBtn"><i class="fa-solid fa-lock"></i> Admin</button>' +
+    '<span class="menu" id="colMenu"><button class="btn outline" id="colBtn"><i class="fa-solid fa-table-columns"></i> Kolom <i class="fa-solid fa-caret-down" style="font-size:11px"></i></button><span class="items" id="colItems"></span></span>' +
     '<span class="menu" id="exportMenu"><button class="btn outline" id="exportBtn"><i class="fa-solid fa-file-export"></i> Export <i class="fa-solid fa-caret-down" style="font-size:11px"></i></button>' +
       '<span class="items"><button data-fmt="xlsx"><i class="fa-solid fa-file-excel" style="color:#15803d"></i> Excel (.xlsx)</button><button data-fmt="csv"><i class="fa-solid fa-file-csv" style="color:#2563eb"></i> CSV</button></span></span>';
 
+  let curQ='';   // untuk highlight hasil pencarian
+  function hl(s){ s=String(s==null?'':s); if(!curQ) return esc(s); const i=s.toLowerCase().indexOf(curQ); if(i<0) return esc(s);
+    return esc(s.slice(0,i))+'<mark>'+esc(s.slice(i,i+curQ.length))+'</mark>'+esc(s.slice(i+curQ.length)); }
+  function ellCell(v){ v=(v==null?'':String(v)); return '<span class="ell" title="'+esc(v)+'">'+hl(v)+'</span>'; }
   const COLS=[
-    {key:'namaMitra',label:'Mitra'},{key:'bentuk',label:'Bentuk',cls:'hide-md'},{key:'pengguna',label:'Pengguna',cls:'hide-md'},
-    {key:'berakhir',label:'Berakhir'},{key:'sisa',label:'Sisa',num:true},{key:'status',label:'Status'}
+    {key:'namaMitra',label:'Mitra',cell:k=>'<span style="font-weight:600">'+ellCell(k.namaMitra)+'</span>'},
+    {key:'bentuk',label:'Bentuk',cls:'hide-md',cell:k=>ellCell(k.bentuk)},
+    {key:'pengguna',label:'Pengguna',cls:'hide-md',cell:k=>ellCell(k.pengguna)},
+    {key:'berakhir',label:'Berakhir',nowrap:true,cell:k=>esc(k.berakhir)},
+    {key:'sisa',label:'Sisa',num:true,nowrap:true,cell:k=>ui.sisa(k.sisa)},
+    {key:'status',label:'Status',cell:k=>ui.badge(k.status)}
   ];
+  let hiddenCols=new Set(), selected=new Set();
+  function colsVisible(){ return COLS.filter(c=>!hiddenCols.has(c.key)); }
   const FILTERS=[
     {id:'fStatus',ph:'Semua status',opts:['Aktif','Segera Berakhir','Habis']},
     {id:'fJenis',ph:'Semua jenis mitra',key:'jenisMitra'},
@@ -69,7 +81,7 @@
       if(j.error) throw new Error(j.error);
       ALL=(j.data||[]).map(k=>Object.assign(k,{_tahun:String(k.mulai).slice(0,4)}));
       try{ const f=await api.get('getFormData'); authRequired=!!f.authRequired; SIMKERMA.setSub(f.instansi||'Data Kerja Sama'); }catch(e){}
-      buildFilters(); renderHead(); restoreState(); applyFilter(true);
+      buildFilters(); restoreState(); buildColMenu(); applyFilter(true);
       ld.style.display='none';
       document.getElementById('content').style.display='block';
     }catch(e){
@@ -87,13 +99,17 @@
     SIMKERMA.searchify(FILTERS.map(f=>f.id));
   }
   function renderHead(){
+    const admin=isAdmin();
     document.getElementById('head').innerHTML =
-      '<th style="width:26px"></th>' + COLS.map(c=>ui.thSort(c.key,c.label,c.cls)).join('') +
-      '<th>Berkas</th>' + (isAdmin()?'<th class="admincol">Aksi</th>':'');
+      (admin?'<th class="selcol"><input type="checkbox" id="selAll" title="Pilih semua (hasil filter)"></th>':'') +
+      '<th style="width:26px"></th>' + colsVisible().map(c=>ui.thSort(c.key,c.label,c.cls)).join('') +
+      '<th>Berkas</th>' + (admin?'<th class="admincol">Aksi</th>':'');
+    const sa=document.getElementById('selAll');
+    if(sa){ const on=VIEW.length>0 && VIEW.every(k=>selected.has(k.id)); sa.checked=on; sa.indeterminate=!on && VIEW.some(k=>selected.has(k.id)); }
   }
 
   function applyFilter(keepPage){
-    const q=(document.getElementById('q').value||'').toLowerCase();
+    const q=(document.getElementById('q').value||'').toLowerCase(); curQ=q;
     const val=id=>{ const e=document.getElementById(id); return e?e.value:''; };
     const fs=val('fStatus'), fj=val('fJenis'), fp=val('fPengguna'), fb=val('fBentuk'), ft=val('fTahun');
     VIEW=ALL.filter(k=>{
@@ -116,7 +132,7 @@
     try{ localStorage.setItem(LSKEY, JSON.stringify({
       q:document.getElementById('q').value,
       f:FILTERS.reduce((o,ff)=>{const e=document.getElementById(ff.id);o[ff.id]=e?e.value:'';return o;},{}),
-      sortKey, sortDir, perPage, page
+      sortKey, sortDir, perPage, page, hidden:[...hiddenCols]
     })); }catch(e){}
   }
   function restoreState(){
@@ -127,6 +143,7 @@
     if(s.sortKey){ sortKey=s.sortKey; sortDir=s.sortDir||1; }
     if(s.perPage) perPage=s.perPage;
     if(s.page) page=s.page;
+    if(s.hidden) hiddenCols=new Set(s.hidden);
   }
 
   // ---- Chip filter aktif ----
@@ -150,21 +167,44 @@
     COLS.forEach(c=>{ const el=document.getElementById('ar-'+c.key); if(el) el.innerHTML=c.key===sortKey?(sortDir>0?'<i class="fa-solid fa-caret-up"></i>':'<i class="fa-solid fa-caret-down"></i>'):''; });
   }
 
+  function rowHtml(k, admin){
+    const open=expanded.has(k.id), sel=selected.has(k.id);
+    return '<tr data-id="'+esc(k.id)+'"'+(sel?' class="selrow"':'')+'>'+
+      (admin?'<td class="selcol"><input type="checkbox" class="rsel" data-id="'+esc(k.id)+'"'+(sel?' checked':'')+'></td>':'')+
+      '<td><span class="exp" style="color:var(--accent)"><i class="fa-solid fa-chevron-'+(open?'down':'right')+'"></i></span></td>'+
+      colsVisible().map(c=>'<td'+(c.cls?' class="'+c.cls+'"':'')+(c.nowrap?' class="nowrap"':'')+'>'+c.cell(k)+'</td>').join('')+
+      '<td style="text-align:center">'+ui.fileLink(k.file)+'</td>'+
+      (admin?'<td class="admincol"><span style="display:inline-flex;gap:6px">'+
+        '<button class="btn outline" data-edit="'+esc(k.id)+'" title="Edit" style="padding:5px 9px"><i class="fa-solid fa-pen"></i></button>'+
+        '<button class="btn danger" data-del="'+esc(k.id)+'" title="Hapus" style="padding:5px 9px"><i class="fa-solid fa-trash"></i></button></span></td>':'')+
+    '</tr>';
+  }
   function render(){
+    const admin=isAdmin();
     const total=VIEW.length, pages=Math.max(1,Math.ceil(total/perPage));
     if(page>pages) page=pages;
-    const admin=isAdmin(), start=(page-1)*perPage, slice=VIEW.slice(start,start+perPage);
-    const totalCols=1+COLS.length+1+(admin?1:0);   // expand + data + berkas + aksi
+    const start=(page-1)*perPage, slice=VIEW.slice(start,start+perPage);
+    const totalCols=(admin?1:0)+1+colsVisible().length+1+(admin?1:0);
+    renderHead();
     let html='';
-    slice.forEach(k=>{ html+=ui.kerjasamaRow(k,admin,expanded.has(k.id)); if(expanded.has(k.id)) html+=ui.detailRow(k,totalCols-1); });
+    slice.forEach(k=>{ html+=rowHtml(k,admin); if(expanded.has(k.id)) html+=ui.detailRow(k,totalCols); });
     document.getElementById('body').innerHTML = html || ui.emptyRow(totalCols,'Tidak ada data yang cocok.');
     const from=total?start+1:0, to=Math.min(start+perPage,total);
+    const totNilai=VIEW.reduce((s,k)=>s+(Number(k.biaya)||0),0);
     document.getElementById('count').innerHTML = total
-      ? 'Menampilkan <b>'+from+'–'+to+'</b> dari <b>'+total+'</b> kerja sama'+(total!==ALL.length?(' <span style="opacity:.8">(difilter dari '+ALL.length+')</span>'):'')
+      ? 'Menampilkan <b>'+from+'–'+to+'</b> dari <b>'+total+'</b> kerja sama'+(total!==ALL.length?(' <span style="opacity:.8">(difilter dari '+ALL.length+')</span>'):'')+' · Total nilai: <b>'+SIMKERMA.rupiah(totNilai)+'</b>'
       : 'Tidak ada data yang cocok.';
     document.getElementById('pager').innerHTML = ui.pager(page,pages);
     const ps=document.getElementById('perPageSel'); if(ps) ps.value=String(perPage);
-    renderChips(); saveState();
+    renderChips(); renderBulk(); saveState();
+  }
+  function renderBulk(){
+    const bar=document.getElementById('bulkbar');
+    if(!isAdmin() || selected.size===0){ bar.style.display='none'; bar.innerHTML=''; return; }
+    bar.style.display='flex';
+    bar.innerHTML='<span><i class="fa-solid fa-square-check"></i> <b>'+selected.size+'</b> baris dipilih</span>'+
+      '<button class="btn danger" id="bulkDel"><i class="fa-solid fa-trash"></i> Hapus terpilih</button>'+
+      '<button class="btn outline" id="bulkClear">Batal pilih</button>';
   }
 
   // ---- Event delegation (granular, tanpa inline handler) ----
@@ -175,7 +215,7 @@
   document.getElementById('body').addEventListener('click', e=>{
     const ed=e.target.closest('[data-edit]'); if(ed){ location.href='form.html?edit='+encodeURIComponent(ed.dataset.edit); return; }
     const dl=e.target.closest('[data-del]'); if(dl){ delRow(dl.dataset.del); return; }
-    if(e.target.closest('a,button')) return;                      // jangan toggle saat klik tautan/tombol
+    if(e.target.closest('a,button,input,label')) return;          // jangan toggle saat klik tautan/tombol/checkbox
     const tr=e.target.closest('tr[data-id]'); if(tr){ const id=tr.dataset.id; expanded.has(id)?expanded.delete(id):expanded.add(id); render(); }
   });
   // klik chip filter → hapus filter itu / semua
@@ -191,6 +231,46 @@
     page=+b.dataset.goto; render(); window.scrollTo({top:0,behavior:'smooth'}); });
   document.getElementById('pager').addEventListener('change', e=>{ if(e.target.id==='perPageSel'){ perPage=+e.target.value; page=1; render(); } });
 
+  // ---- Seleksi baris + hapus massal (admin) ----
+  document.getElementById('head').addEventListener('change', e=>{ if(e.target.id!=='selAll') return;
+    if(e.target.checked) VIEW.forEach(k=>selected.add(k.id)); else VIEW.forEach(k=>selected.delete(k.id)); render(); });
+  document.getElementById('body').addEventListener('change', e=>{ const c=e.target.closest('.rsel'); if(!c) return;
+    c.checked?selected.add(c.dataset.id):selected.delete(c.dataset.id); render(); });
+  document.getElementById('bulkbar').addEventListener('click', e=>{
+    if(e.target.closest('#bulkClear')){ selected.clear(); render(); return; }
+    if(e.target.closest('#bulkDel')){ bulkDelete(); return; }
+  });
+  async function bulkDelete(){
+    const ids=VIEW.filter(k=>selected.has(k.id)).map(k=>k.id);
+    if(!ids.length) return;
+    if(!confirm('Hapus '+ids.length+' kerja sama terpilih?\nTindakan ini tidak bisa dibatalkan.')) return;
+    SIMKERMA.overlay(true,'Menghapus '+ids.length+' data…');
+    let ok=0, authFail=false;
+    for(const id of ids){
+      try{ const res=await api.post({action:'deleteKerjasama',id,password:gate.pw});
+        if(res.status==='success'){ ok++; ALL=ALL.filter(x=>x.id!==id); selected.delete(id); }
+        else if(res.auth){ authFail=true; break; }
+      }catch(err){}
+    }
+    SIMKERMA.overlay(false);
+    applyFilter();
+    if(authFail){ gate.clear(); gate.prompt('Sesi/sandi tidak valid. Masuk lagi lalu ulangi.', null); }
+    else alert(ok+' data terhapus.');
+  }
+
+  // ---- Tampil/sembunyi kolom ----
+  function buildColMenu(){
+    document.getElementById('colItems').innerHTML = COLS.map(c=>
+      '<label style="display:flex;align-items:center;gap:8px;padding:8px 11px;cursor:pointer;font-size:13px;font-weight:500;border-radius:7px">'+
+      '<input type="checkbox" data-col="'+c.key+'"'+(hiddenCols.has(c.key)?'':' checked')+' style="width:auto;margin:0"> '+esc(c.label)+'</label>').join('');
+  }
+  const colMenu=document.getElementById('colMenu');
+  document.getElementById('colBtn').addEventListener('click', e=>{ e.stopPropagation(); document.getElementById('exportMenu').classList.remove('open'); colMenu.classList.toggle('open'); });
+  document.getElementById('colItems').addEventListener('click', e=>e.stopPropagation());
+  document.getElementById('colItems').addEventListener('change', e=>{ const cb=e.target.closest('[data-col]'); if(!cb) return;
+    cb.checked?hiddenCols.delete(cb.dataset.col):hiddenCols.add(cb.dataset.col); render(); saveState(); });
+  document.addEventListener('click', ()=>colMenu.classList.remove('open'));
+
   // ---- Admin ----
   function isAdmin(){ return document.body.classList.contains('admin'); }
   document.getElementById('adminBtn').addEventListener('click', ()=>{
@@ -201,7 +281,7 @@
   });
   document.getElementById('lockLink').addEventListener('click', e=>{ e.preventDefault(); lockAdmin(); });
   function enterAdmin(){ document.body.classList.add('admin'); document.getElementById('adminbar').classList.add('on'); document.getElementById('adminBtn').innerHTML='<i class="fa-solid fa-lock-open"></i> Admin'; renderHead(); render(); }
-  function lockAdmin(){ document.body.classList.remove('admin'); document.getElementById('adminbar').classList.remove('on'); document.getElementById('adminBtn').innerHTML='<i class="fa-solid fa-lock"></i> Admin'; renderHead(); render(); }
+  function lockAdmin(){ document.body.classList.remove('admin'); document.getElementById('adminbar').classList.remove('on'); document.getElementById('adminBtn').innerHTML='<i class="fa-solid fa-lock"></i> Admin'; selected.clear(); render(); }
 
   async function delRow(id){
     const k=ALL.find(x=>x.id===id); if(!k) return;
