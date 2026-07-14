@@ -81,12 +81,27 @@
         '<button class="btn danger" data-del="' + esc(k.id) + '" title="Hapus" style="padding:5px 9px"><i class="fa-solid fa-trash"></i></button></span></td>' : '') +
       '</tr>';
   }
+  // Detail expand: hanya field yang BELUM tampil di kolom utama (hindari redundan)
+  function dfield(label, val) { val = (val == null || val === '') ? '-' : val; return '<div><b>' + esc(label) + ':</b> ' + esc(val) + '</div>'; }
+  const DETAIL = [
+    { k: 'jenisMitra', l: 'Jenis Mitra' }, { k: 'nomorSurat', l: 'No. Surat' }, { k: 'mulai', l: 'Tanggal Mulai' },
+    { k: 'wilayah', l: 'Wilayah' }, { k: 'biaya', l: 'Biaya', f: v => v ? SIMKERMA.rupiah(v) : '-' },
+    { k: 'ruangLingkup', l: 'Ruang Lingkup' }, { k: 'jabatan', l: 'Jabatan Penandatangan' },
+    { k: 'masaBerlaku', l: 'Masa Berlaku', f: v => v ? v + ' tahun' : '-' }, { k: 'jenisEntri', l: 'Jenis Entri' },
+    { k: 'dokumenInduk', l: 'Dokumen Induk' }, { k: 'refSebelumnya', l: 'Ref Sebelumnya' }, { k: 'catatan', l: 'Catatan' }
+  ];
+  function detailRowHtml(k, totalCols) {
+    const cells = DETAIL.filter(d => { const col = M.colOf(d.k); return !(col && !M.hidden.has(d.k)); })
+      .map(d => dfield(d.l, d.f ? d.f(k[d.k]) : k[d.k])).join('');
+    return '<tr class="detail"><td colspan="' + totalCols + '" style="padding:14px 16px 16px 46px">' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px 18px;font-size:12px">' + cells + '</div></td></tr>';
+  }
   function render() {
     const admin = isAdmin();
     renderHead();
     const slice = M.slice(), totalCols = (admin ? 1 : 0) + 1 + M.visibleCols().length + 1 + (admin ? 1 : 0);
     let html = '';
-    slice.forEach(k => { html += rowHtml(k, admin); if (M.expanded.has(k.id)) html += ui.detailRow(k, totalCols); });
+    slice.forEach(k => { html += rowHtml(k, admin); if (M.expanded.has(k.id)) html += detailRowHtml(k, totalCols); });
     $('body').innerHTML = html || ui.emptyRow(totalCols, 'Tidak ada data yang cocok.');
     const r = M.range();
     $('count').innerHTML = r.total

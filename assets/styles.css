@@ -1456,9 +1456,10 @@ mark {
 .berlaku-prev{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding:10px 13px;background:var(--accent-soft);border:1px solid #dcdcfb;border-radius:10px;font-size:13px;color:var(--accent-d)}
 .berlaku-prev>i{color:var(--accent)}
 /* ---------- Data: filter bar dinamis + per-page + aksen status baris ---------- */
-.filterbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px}
-.toolbar #filters.filterbar{display:flex}
-.filterbar .ss{width:auto;min-width:160px;flex:0 1 185px}
+/* filter membagi lebar merata (12/jumlah) & reflow responsif */
+.filterbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px}
+.toolbar #filters.filterbar{display:grid}
+.filterbar .ss{width:100%;min-width:0;flex:none}
 .perpage{display:flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px}
 .perpage select{width:auto;padding:7px 9px;font-size:13px}
 .tablewrap tr.row-habis>td:first-child{box-shadow:inset 3px 0 0 var(--red)}
