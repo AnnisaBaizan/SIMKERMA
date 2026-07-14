@@ -219,14 +219,18 @@ Reminder bersifat **anti-spam**: tiap baris hanya dikirim sekali per ambang
 ```
 Monitoring-Kerjasama/
 ├── Code.gs            # Backend Google Apps Script (Web App)
-├── index.html         # Dashboard insight (Chart.js)
-├── form.html          # Form input/edit (mode Baru/Perpanjangan, ?edit=<id> untuk admin)
-├── data.html          # Tabel data publik (cari/filter/urut/CSV+Excel) + Edit/Hapus admin
+├── index.html         # Dashboard — tampilan (view)
+├── form.html          # Form input/edit — tampilan (view)
+├── data.html          # Tabel data — tampilan (view)
 ├── assets/
 │   ├── styles.css     # Design system bersama (semua halaman → tampilan seragam)
-│   ├── app.js         # Modul inti: SIMKERMA.{api,esc,header,badge,overlay,gate,msg}
-│   └── components.js  # Komponen UI granular: SIMKERMA.ui.{statCard,kerjasamaRow,pager,…}
-├── build.js           # Inject GAS_URL → dist/ (HTML root + assets/*.js; salin assets/styles.css)
+│   ├── app.js         # Modul inti: SIMKERMA.{api,esc,header,badge,overlay,gate,searchSelect,msg}
+│   ├── components.js  # Komponen UI granular: SIMKERMA.ui.{statCard,detailRow,pager,skel…}
+│   └── controllers/   # "Otak"/logika tiap halaman (view ↔ controller dipisah)
+│       ├── dashboard.js  # Logika Dashboard (Chart.js, tab grafik, ringkasan)
+│       ├── form.js       # Logika Form (mode, dataset, edit, gate, upload)
+│       └── data.js       # Logika Tabel (filter/urut/paginasi/kolom/seleksi/export)
+├── build.js           # Inject GAS_URL → dist/ (HTML + assets + controllers; salin styles.css)
 ├── vercel.json        # Konfigurasi build statis Vercel
 ├── package.json       # Metadata + script build
 ├── .env.example       # Template environment variable
