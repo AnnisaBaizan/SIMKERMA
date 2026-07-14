@@ -1082,8 +1082,20 @@ tr.detail:hover {
 /* ---------- Data table: rapi & seragam ---------- */
 .tablewrap tbody td{vertical-align:middle}
 .tablewrap td.nowrap{white-space:nowrap}
-.tablewrap .ell{display:inline-block;max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+.tablewrap .ell{display:inline-block;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
 .tablewrap .ell-sm{max-width:150px}
+/* ikon FA */
+.stat-ic{color:var(--accent)}
+.stat.red .stat-ic{color:var(--red)}.stat.amber .stat-ic{color:var(--amber)}.stat.green .stat-ic{color:var(--green)}
+.stat-ic i{font-size:14px}
+.navlink i{font-size:12px;opacity:.92;margin-right:1px}
+.tab i{margin-right:3px}
+.ss-caret i{font-size:11px}
+.panel h3 i{font-size:15px}
+.glock{width:54px;height:54px;border-radius:15px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:22px;margin:2px auto 4px}
+/* skeleton loading */
+.skel{display:block;background:linear-gradient(90deg,#edeef2 25%,#f6f7fb 37%,#edeef2 63%);background-size:400% 100%;animation:sh 1.4s ease infinite;border-radius:8px}
+@keyframes sh{0%{background-position:100% 50%}100%{background-position:0 50%}}
 .tablewrap tr.detail td{vertical-align:top}
 
 /* ---------- Searchable select (SIMKERMA.searchSelect) ---------- */

@@ -30,9 +30,9 @@
 
   // ---- Header / navigasi (komponen) ----
   var NAV = [
-    { k: 'dashboard', label: '📊 Dashboard', href: 'index.html' },
-    { k: 'data', label: '📋 Data', href: 'data.html' },
-    { k: 'input', label: '➕ Input', href: 'form.html' }
+    { k: 'dashboard', label: '<i class="fa-solid fa-gauge-high"></i> Dashboard', href: 'index.html' },
+    { k: 'data', label: '<i class="fa-solid fa-table-list"></i> Data', href: 'data.html' },
+    { k: 'input', label: '<i class="fa-solid fa-plus"></i> Input', href: 'form.html' }
   ];
   S.header = function (active, opts) {
     opts = opts || {};
@@ -82,7 +82,7 @@
       var m = document.createElement('div'); m.className = 'modal';
       m.innerHTML = '<div class="box">' +
         '<div class="gload"><div class="spin"></div><div class="gloadtext">Memuat…</div></div>' +
-        '<div class="gmain"><div style="font-size:32px">🔒</div>' +
+        '<div class="gmain"><div class="glock"><i class="fa-solid fa-lock"></i></div>' +
           '<h3>Masuk Admin</h3><p class="muted gsub">Kata sandi untuk menambah/ubah/hapus data.</p>' +
           '<input type="password" class="gpw" placeholder="Kata sandi" autocomplete="current-password"/>' +
           '<div class="gmsg"></div>' +
@@ -143,7 +143,7 @@
     sel.style.display = 'none';
     var wrap = document.createElement('div'); wrap.className = 'ss';
     wrap.innerHTML = '<div class="ss-field"><input class="ss-input" type="text" autocomplete="off" spellcheck="false"/>' +
-      '<span class="ss-caret">▾</span></div><div class="ss-panel"></div>';
+      '<span class="ss-caret"><i class="fa-solid fa-chevron-down"></i></span></div><div class="ss-panel"></div>';
     sel.parentNode.insertBefore(wrap, sel.nextSibling);
     var input = wrap.querySelector('.ss-input'), panel = wrap.querySelector('.ss-panel'), caret = wrap.querySelector('.ss-caret');
     input.placeholder = sel.getAttribute('data-ph') || 'Cari / pilih…';

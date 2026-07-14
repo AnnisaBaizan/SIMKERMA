@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SIMKERMA — Input Kerja Sama</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f46e5'/%3E%3Ctext x='16' y='23' font-size='19' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'%3ES%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="assets/styles.css" />
 <script src="assets/app.js"></script>
 <script src="assets/components.js"></script>
@@ -19,8 +20,8 @@
   <div class="card">
     <p class="section-title">Jenis Pengisian</p>
     <div class="mode">
-      <button type="button" id="modeBaru" class="active" onclick="setMode('Baru')">➕ Kerja Sama Baru<small>Mitra/kesepakatan baru</small></button>
-      <button type="button" id="modePerpanjangan" onclick="setMode('Perpanjangan')">🔄 Perpanjangan<small>Mitra yang sudah ada</small></button>
+      <button type="button" id="modeBaru" class="active" onclick="setMode('Baru')"><i class="fa-solid fa-circle-plus"></i> Kerja Sama Baru<small>Mitra/kesepakatan baru</small></button>
+      <button type="button" id="modePerpanjangan" onclick="setMode('Perpanjangan')"><i class="fa-solid fa-arrows-rotate"></i> Perpanjangan<small>Mitra yang sudah ada</small></button>
     </div>
     <div id="perpanjanganBox" style="display:none">
       <label>Pilih Mitra yang Diperpanjang <span class="req">*</span></label>
@@ -103,7 +104,7 @@
       <textarea id="catatan" rows="2" placeholder="Info tambahan (mis. status negosiasi)…"></textarea>
     </div>
 
-    <button type="submit" class="btn primary block" id="submitBtn" disabled>⏳ Memuat data…</button>
+    <button type="submit" class="btn primary block" id="submitBtn" disabled><i class="fa-solid fa-spinner fa-spin"></i> Memuat data…</button>
   </form>
   </div><!-- /formArea -->
 </div>
@@ -115,7 +116,7 @@
   let DATA={ dataset:{}, mitra:[] }, MODE='Baru', EDIT_ID=null;
   const ruangSelected=new Set();
 
-  function setReady(ready){ const b=document.getElementById('submitBtn'); b.disabled=!ready; b.innerHTML=ready?'💾 Simpan Kerja Sama':'⏳ Memuat data…'; }
+  function setReady(ready){ const b=document.getElementById('submitBtn'); b.disabled=!ready; b.innerHTML=ready?'<i class="fa-solid fa-floppy-disk"></i> Simpan Kerja Sama':'<i class="fa-solid fa-spinner fa-spin"></i> Memuat data…'; }
   function revealForm(){ gate.close(); document.getElementById('formArea').style.display=''; }
   function hideForm(){ document.getElementById('formArea').style.display='none'; }
   function requireLogin(msg){ hideForm(); gate.prompt(msg||'', revealForm, { mandatory:true, sub:'Masukkan kata sandi untuk mengisi formulir.' }); }
@@ -200,7 +201,7 @@
       document.getElementById('tanggalMulai').value=k.mulai||''; document.getElementById('tanggalBerakhir').value=k.berakhir||'';
       fillInduk(k.idMitra); if(k.dokumenInduk){ const s=document.getElementById('dokumenInduk'); if(![...s.options].some(o=>o.value===k.dokumenInduk)){ const o=document.createElement('option'); o.value=k.dokumenInduk; o.textContent=k.dokumenInduk; s.appendChild(o);} s.value=k.dokumenInduk; }
       document.getElementById('catatan').value=k.catatan||'';
-      SIMKERMA.setSub('Edit Kerja Sama'); document.getElementById('submitBtn').innerHTML='💾 Perbarui Kerja Sama';
+      SIMKERMA.setSub('Edit Kerja Sama'); document.getElementById('submitBtn').innerHTML='<i class="fa-solid fa-floppy-disk"></i> Perbarui Kerja Sama';
       show('ok','✏️ <b>Mode edit</b> — mengubah «'+esc(k.namaMitra||'')+'». Ubah seperlunya lalu simpan.');
     }catch(e){ show('err','Gagal memuat data edit: '+esc(e.message)); }
   }
@@ -245,7 +246,7 @@
       else if(res.auth){ overlay(false); gate.clear(); gate.prompt('Kata sandi salah. Coba lagi.', ()=>document.getElementById('form').requestSubmit(), {mandatory:true}); }
       else { overlay(false); show('err','Gagal: '+(res.error||'tidak diketahui')); }
     }catch(err){ overlay(false); show('err','Gagal mengirim: '+esc(err.message)); }
-    finally{ overlay(false); btn.disabled=false; if(!EDIT_ID) btn.innerHTML='💾 Simpan Kerja Sama'; }
+    finally{ overlay(false); btn.disabled=false; if(!EDIT_ID) btn.innerHTML='<i class="fa-solid fa-floppy-disk"></i> Simpan Kerja Sama'; }
   });
 
   load();

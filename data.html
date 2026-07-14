@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SIMKERMA — Data Kerja Sama</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f46e5'/%3E%3Ctext x='16' y='23' font-size='19' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'%3ES%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="assets/styles.css" />
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="assets/app.js"></script>
@@ -14,18 +15,18 @@
 <header id="appbar"></header>
 
 <div class="container" style="max-width:1280px">
-  <div class="adminbar" id="adminbar">🔓 <b>Mode admin aktif</b> — tombol Edit/Hapus muncul di tiap baris. <a href="#" id="lockLink" style="color:#4338ca">Kunci</a></div>
+  <div class="adminbar" id="adminbar"><i class="fa-solid fa-lock-open"></i> <b>Mode admin aktif</b> — tombol Edit/Hapus muncul di tiap baris. <a href="#" id="lockLink" style="color:#4338ca">Kunci</a></div>
 
   <div class="toolbar">
     <div class="rowf">
-      <input id="q" class="filter-input" placeholder="🔎 Cari mitra, nomor surat, pengguna, jenis…" />
+      <input id="q" class="filter-input" placeholder="Cari mitra, nomor surat, pengguna, jenis…" />
       <span id="filters"></span>
       <button class="btn primary" id="resetBtn">Reset</button>
     </div>
     <div class="muted" id="count" style="margin-top:10px"></div>
   </div>
 
-  <div id="loading" class="loading"><div class="spin"></div>Memuat data…</div>
+  <div id="loading"></div>
   <div id="content" style="display:none">
     <div class="tablewrap">
       <table>
@@ -41,14 +42,13 @@
   const ui=SIMKERMA.ui, api=SIMKERMA.api, gate=SIMKERMA.gate;
   SIMKERMA.header('data', { subtitle:'Data Kerja Sama' });
   SIMKERMA.setActions(
-    '<button class="btn ghost" id="adminBtn">🔒 Admin</button>' +
-    '<span class="menu" id="exportMenu"><button class="btn" id="exportBtn">⬇️ Export ▾</button>' +
-      '<span class="items"><button data-fmt="xlsx">📊 Excel (.xlsx)</button><button data-fmt="csv">📄 CSV</button></span></span>'
+    '<button class="btn ghost" id="adminBtn"><i class="fa-solid fa-lock"></i> Admin</button>' +
+    '<span class="menu" id="exportMenu"><button class="btn" id="exportBtn"><i class="fa-solid fa-file-export"></i> Export <i class="fa-solid fa-caret-down" style="font-size:11px"></i></button>' +
+      '<span class="items"><button data-fmt="xlsx"><i class="fa-solid fa-file-excel" style="color:#15803d"></i> Excel (.xlsx)</button><button data-fmt="csv"><i class="fa-solid fa-file-csv" style="color:#2563eb"></i> CSV</button></span></span>'
   );
 
   const COLS=[
-    {key:'namaMitra',label:'Mitra'},{key:'jenisMitra',label:'Jenis'},{key:'bentuk',label:'Bentuk'},
-    {key:'nomorSurat',label:'No. Surat'},{key:'pengguna',label:'Pengguna'},{key:'mulai',label:'Mulai'},
+    {key:'namaMitra',label:'Mitra'},{key:'bentuk',label:'Bentuk'},{key:'pengguna',label:'Pengguna'},
     {key:'berakhir',label:'Berakhir'},{key:'sisa',label:'Sisa',num:true},{key:'status',label:'Status'}
   ];
   const FILTERS=[
@@ -61,16 +61,18 @@
   let ALL=[], VIEW=[], page=1, perPage=25, sortKey='sisa', sortDir=1, expanded=new Set(), authRequired=true;
 
   async function load(){
+    const ld=document.getElementById('loading');
+    ld.style.display='block'; ld.innerHTML=ui.skelData();
     try{
       const j=await api.get('getKerjasama');
       if(j.error) throw new Error(j.error);
       ALL=(j.data||[]).map(k=>Object.assign(k,{_tahun:String(k.mulai).slice(0,4)}));
       try{ const f=await api.get('getFormData'); authRequired=!!f.authRequired; SIMKERMA.setSub(f.instansi||'Data Kerja Sama'); }catch(e){}
       buildFilters(); renderHead(); applyFilter();
-      document.getElementById('loading').style.display='none';
+      ld.style.display='none';
       document.getElementById('content').style.display='block';
     }catch(e){
-      document.getElementById('loading').innerHTML='❌ Gagal memuat: '+esc(e.message)+'<br><span class="muted">Pastikan GAS_URL benar & Web App aktif.</span>';
+      ld.innerHTML='<div class="loading">❌ Gagal memuat: '+esc(e.message)+'<br><span class="muted">Pastikan GAS_URL benar & Web App aktif.</span></div>';
     }
   }
 
@@ -112,17 +114,17 @@
     VIEW.sort((a,b)=>{ let x=a[sortKey], y=b[sortKey];
       if(col.num){ x=Number(x); y=Number(y); if(isNaN(x))x=1e15; if(isNaN(y))y=1e15; return (x-y)*sortDir; }
       return String(x).localeCompare(String(y))*sortDir; });
-    COLS.forEach(c=>{ const el=document.getElementById('ar-'+c.key); if(el) el.textContent=c.key===sortKey?(sortDir>0?'▲':'▼'):''; });
+    COLS.forEach(c=>{ const el=document.getElementById('ar-'+c.key); if(el) el.innerHTML=c.key===sortKey?(sortDir>0?'<i class="fa-solid fa-caret-up"></i>':'<i class="fa-solid fa-caret-down"></i>'):''; });
   }
 
   function render(){
     const total=VIEW.length, pages=Math.max(1,Math.ceil(total/perPage));
     if(page>pages) page=pages;
     const admin=isAdmin(), start=(page-1)*perPage, slice=VIEW.slice(start,start+perPage);
-    const colspan=admin?11:10;
+    const totalCols=1+COLS.length+1+(admin?1:0);   // expand + data + berkas + aksi
     let html='';
-    slice.forEach(k=>{ html+=ui.kerjasamaRow(k,admin,expanded.has(k.id)); if(expanded.has(k.id)) html+=ui.detailRow(k,colspan); });
-    document.getElementById('body').innerHTML = html || ui.emptyRow(12,'Tidak ada data yang cocok.');
+    slice.forEach(k=>{ html+=ui.kerjasamaRow(k,admin,expanded.has(k.id)); if(expanded.has(k.id)) html+=ui.detailRow(k,totalCols-1); });
+    document.getElementById('body').innerHTML = html || ui.emptyRow(totalCols,'Tidak ada data yang cocok.');
     document.getElementById('count').textContent = total+' data'+(total!==ALL.length?(' (dari '+ALL.length+')'):'')+' · halaman '+page+'/'+pages;
     document.getElementById('pager').innerHTML = ui.pager(page,pages);
     const ps=document.getElementById('perPageSel'); if(ps) ps.value=String(perPage);
@@ -151,8 +153,8 @@
     gate.prompt('', enterAdmin);
   });
   document.getElementById('lockLink').addEventListener('click', e=>{ e.preventDefault(); lockAdmin(); });
-  function enterAdmin(){ document.body.classList.add('admin'); document.getElementById('adminbar').classList.add('on'); document.getElementById('adminBtn').textContent='🔓 Admin'; renderHead(); render(); }
-  function lockAdmin(){ document.body.classList.remove('admin'); document.getElementById('adminbar').classList.remove('on'); document.getElementById('adminBtn').textContent='🔒 Admin'; renderHead(); render(); }
+  function enterAdmin(){ document.body.classList.add('admin'); document.getElementById('adminbar').classList.add('on'); document.getElementById('adminBtn').innerHTML='<i class="fa-solid fa-lock-open"></i> Admin'; renderHead(); render(); }
+  function lockAdmin(){ document.body.classList.remove('admin'); document.getElementById('adminbar').classList.remove('on'); document.getElementById('adminBtn').innerHTML='<i class="fa-solid fa-lock"></i> Admin'; renderHead(); render(); }
 
   async function delRow(id){
     const k=ALL.find(x=>x.id===id); if(!k) return;

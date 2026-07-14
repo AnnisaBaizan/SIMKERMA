@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SIMKERMA — Dashboard Monitoring Kerja Sama</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f46e5'/%3E%3Ctext x='16' y='23' font-size='19' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'%3ES%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="assets/styles.css" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="assets/app.js"></script>
@@ -14,7 +15,7 @@
 <header id="appbar"></header>
 
 <div class="container">
-  <div id="loading" class="loading"><div class="spin"></div>Memuat data dashboard…</div>
+  <div id="loading"></div>
   <div id="content" style="display:none">
     <div class="cards" id="stats"></div>
 
@@ -30,8 +31,8 @@
     </div>
 
     <div class="panel full" style="margin-bottom:16px">
-      <h3>⚠️ Perlu Tindak Lanjut — Akan / Sudah Berakhir</h3>
-      <input class="filter-input" id="filterTL" placeholder="🔎 Cari mitra / pengguna…" oninput="renderTL()" style="margin-bottom:10px" />
+      <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--amber)"></i> Perlu Tindak Lanjut — Akan / Sudah Berakhir</h3>
+      <input class="filter-input" id="filterTL" placeholder="Cari mitra / pengguna…" oninput="renderTL()" style="margin-bottom:10px" />
       <div class="scroll">
         <table>
           <thead><tr><th>Mitra</th><th>Bentuk / No. Surat</th><th>Pengguna</th><th>Berakhir</th><th>Status</th><th>Berkas</th></tr></thead>
@@ -43,7 +44,7 @@
 
     <div class="grid" style="margin-top:16px">
       <div class="panel">
-        <h3>🏆 Mitra Kerja Sama Terlama</h3>
+        <h3><i class="fa-solid fa-trophy" style="color:var(--amber)"></i> Mitra Kerja Sama Terlama</h3>
         <div class="scroll" style="max-height:300px"><table>
           <thead><tr><th>Mitra</th><th>Sejak</th><th>Lama</th><th>Jml</th></tr></thead>
           <tbody id="terlamaBody"></tbody>
@@ -63,7 +64,7 @@
 
 <script>
   SIMKERMA.header('dashboard', { subtitle:'Dashboard Insight' });
-  SIMKERMA.setActions('<button class="btn ghost" onclick="loadDash()">🔄 Segarkan</button>');
+  SIMKERMA.setActions('<button class="btn ghost" onclick="loadDash()"><i class="fa-solid fa-rotate"></i> Segarkan</button>');
 
   const ui = SIMKERMA.ui, api = SIMKERMA.api;
   let DASH=null, charts={};
@@ -72,16 +73,17 @@
     return n>=1e9?f(n/1e9,' M'):n>=1e6?f(n/1e6,' jt'):n>=1e3?f(Math.round(n/1e3),' rb'):('Rp '+n.toLocaleString('id-ID')); };
 
   async function loadDash(){
-    document.getElementById('loading').style.display='block';
+    const ld=document.getElementById('loading');
+    ld.style.display='block'; ld.innerHTML=ui.skelDash();
     document.getElementById('content').style.display='none';
     try{
       DASH=await api.get('getDashboard');
       if(DASH.error) throw new Error(DASH.error);
       render();
-      document.getElementById('loading').style.display='none';
+      ld.style.display='none';
       document.getElementById('content').style.display='block';
     }catch(e){
-      document.getElementById('loading').innerHTML='❌ Gagal memuat: '+esc(e.message)+'<br><span class="muted">Pastikan GAS_URL benar & Web App di-deploy "Anyone".</span>';
+      ld.innerHTML='<div class="loading">❌ Gagal memuat: '+esc(e.message)+'<br><span class="muted">Pastikan GAS_URL benar & Web App di-deploy "Anyone".</span></div>';
     }
   }
 
@@ -90,23 +92,23 @@
     document.getElementById('genAt').textContent='Diperbarui: '+(DASH.generatedAt||'');
     const r=DASH.ringkasan;
     document.getElementById('stats').innerHTML =
-      ui.statCard('brand', r.total, 'Total Kerja Sama', '📊')+
-      ui.statCard('green', r.aktif, 'Aktif', '✅')+
-      ui.statCard('amber', r.segeraBerakhir, 'Segera Berakhir (≤90 hr)', '⏰')+
-      ui.statCard('red', r.habis, 'Sudah Habis', '⛔')+
-      ui.statCard('brand', r.totalMitra, 'Jumlah Mitra', '🤝')+
-      ui.statCard('brand', rupiahShort(r.totalBiaya), 'Total Nilai', '💰', SIMKERMA.rupiah(r.totalBiaya));
+      ui.statCard('brand', r.total, 'Total Kerja Sama', '<i class="fa-solid fa-file-contract"></i>')+
+      ui.statCard('green', r.aktif, 'Aktif', '<i class="fa-solid fa-circle-check"></i>')+
+      ui.statCard('amber', r.segeraBerakhir, 'Segera Berakhir (≤90 hr)', '<i class="fa-solid fa-clock"></i>')+
+      ui.statCard('red', r.habis, 'Sudah Habis', '<i class="fa-solid fa-circle-xmark"></i>')+
+      ui.statCard('brand', r.totalMitra, 'Jumlah Mitra', '<i class="fa-solid fa-handshake"></i>')+
+      ui.statCard('brand', rupiahShort(r.totalBiaya), 'Total Nilai', '<i class="fa-solid fa-money-bill-wave"></i>', SIMKERMA.rupiah(r.totalBiaya));
     renderTL(); renderTerlama(); renderTop();
     // Dua kolom, tiap kolom punya tab diagram sendiri
     mountTabs('tabsA','chartA',[
-      { label:'📈 Tren/Tahun',  go:cv=>barChart(cv, sortKeys(DASH.trenPerTahun), { line:true }) },
-      { label:'🎯 Per Bidang',  go:cv=>barChart(cv, topN(DASH.perBidang,10), { horizontal:true }) },
-      { label:'⏳ Masa Berlaku', go:cv=>barChart(cv, sortKeys(DASH.distribusiMasaBerlaku), { suffix:' th' }) },
+      { label:'<i class="fa-solid fa-chart-line"></i> Tren/Tahun',  go:cv=>barChart(cv, sortKeys(DASH.trenPerTahun), { line:true }) },
+      { label:'<i class="fa-solid fa-bullseye"></i> Per Bidang',  go:cv=>barChart(cv, topN(DASH.perBidang,10), { horizontal:true }) },
+      { label:'<i class="fa-solid fa-hourglass-half"></i> Masa Berlaku', go:cv=>barChart(cv, sortKeys(DASH.distribusiMasaBerlaku), { suffix:' th' }) },
     ]);
     mountTabs('tabsB','chartB',[
-      { label:'🏥 Jenis Mitra',  go:cv=>pieChart(cv, topN(DASH.perJenisMitra,8)) },
-      { label:'📄 Bentuk',       go:cv=>pieChart(cv, DASH.perBentuk) },
-      { label:'🎓 Top Pengguna', go:cv=>barChart(cv, topN(DASH.perPengguna,10), { horizontal:true }) },
+      { label:'<i class="fa-solid fa-hospital"></i> Jenis Mitra',  go:cv=>pieChart(cv, topN(DASH.perJenisMitra,8)) },
+      { label:'<i class="fa-solid fa-file-lines"></i> Bentuk',       go:cv=>pieChart(cv, DASH.perBentuk) },
+      { label:'<i class="fa-solid fa-graduation-cap"></i> Top Pengguna', go:cv=>barChart(cv, topN(DASH.perPengguna,10), { horizontal:true }) },
     ]);
   }
 
