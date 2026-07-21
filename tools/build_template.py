@@ -49,6 +49,7 @@ PENGATURAN = [
     ('WA_EKSTERNAL_AKTIF', 'FALSE', 'HATI-HATI: WA ke PIC mitra. Bila banyak, nomor Fonnte bisa diblokir (TRUE/FALSE)'),
     ('WA_EKSTERNAL_MAKS_PER_HARI', 8, 'Batas jumlah WA eksternal per hari (anti-blokir). Mis. 8'),
     ('WA_EKSTERNAL_JEDA_DETIK', 8, 'Jeda antar kirim WA eksternal dalam detik (anti-burst). Mis. 8'),
+    ('SURVEY_AKTIF', 'TRUE', 'Tampilkan overlay survei tahunan (mulai November). FALSE = matikan'),
 ]
 
 # ---- Palet "Ink & Indigo" ----

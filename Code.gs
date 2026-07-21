@@ -54,6 +54,9 @@ const CONFIG = {
   WA_EKSTERNAL_AKTIF:    false,    // WA ke PIC mitra — RISIKO nomor Fonnte diblokir bila banyak
   WA_EKSTERNAL_MAKS_PER_HARI: 8,   // batas jumlah WA eksternal per hari (anti-blokir)
   WA_EKSTERNAL_JEDA_DETIK:    8,   // jeda antar-kirim WA eksternal (detik), anti-burst
+
+  // Antarmuka
+  SURVEY_AKTIF: true,              // tampilkan overlay survei tahunan (Nov). FALSE = matikan
 };
 
 // ==================== HEADERS ====================
@@ -114,6 +117,7 @@ function _defaultSettings() {
     WA_GRUP_AKTIF: CONFIG.WA_GRUP_AKTIF, WA_GRUP_ID: CONFIG.WA_GRUP_ID, LAMPIRKAN_FILE: CONFIG.LAMPIRKAN_FILE,
     EMAIL_EKSTERNAL_AKTIF: CONFIG.EMAIL_EKSTERNAL_AKTIF, WA_EKSTERNAL_AKTIF: CONFIG.WA_EKSTERNAL_AKTIF,
     WA_EKSTERNAL_MAKS_PER_HARI: CONFIG.WA_EKSTERNAL_MAKS_PER_HARI, WA_EKSTERNAL_JEDA_DETIK: CONFIG.WA_EKSTERNAL_JEDA_DETIK,
+    SURVEY_AKTIF: CONFIG.SURVEY_AKTIF,
   };
 }
 function _settingKeterangan() {
@@ -133,6 +137,7 @@ function _settingKeterangan() {
     WA_EKSTERNAL_AKTIF: 'HATI-HATI: WA ke PIC mitra. Bila banyak, nomor Fonnte bisa diblokir (TRUE/FALSE)',
     WA_EKSTERNAL_MAKS_PER_HARI: 'Batas jumlah WA eksternal per hari (anti-blokir). Mis. 8',
     WA_EKSTERNAL_JEDA_DETIK: 'Jeda antar kirim WA eksternal dalam detik (anti-burst). Mis. 8',
+    SURVEY_AKTIF: 'Tampilkan overlay survei tahunan (mulai November). FALSE = matikan',
   };
 }
 function _settings() {
@@ -189,6 +194,7 @@ function doGet(e) {
     if (action === 'getFormData')      result = getFormData();
     else if (action === 'getDashboard') result = getDashboard();
     else if (action === 'getKerjasama') result = { data: _listKerjasama() };
+    else if (action === 'getPublicConfig') result = getPublicConfig();
     else if (action === 'ping')         result = { status: 'ok', time: new Date().toISOString() };
     else result = { error: 'Action tidak dikenal: ' + action };
   } catch (err) {
@@ -526,6 +532,11 @@ function getFormData() {
     mitra, dokByMitra,
     authRequired: String(CONFIG.ADMIN_PASSWORD || '') !== '',
   };
+}
+
+// Konfigurasi publik ringan untuk frontend (mis. toggle survei) — tanpa data sensitif.
+function getPublicConfig() {
+  return { surveyAktif: !!_settings().SURVEY_AKTIF };
 }
 
 // ==================== LIST & DASHBOARD ====================

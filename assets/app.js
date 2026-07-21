@@ -9,8 +9,8 @@
   var BUG_URL = "__BUG_URL__";
   var RATING_URL = "__RATING_URL__";
   var RATING_OVERRIDE_PW = "__RATING_OVERRIDE_PASSWORD__";
-  var SURVEY_AKTIF = "__SURVEY_AKTIF__" !== "0";   // '0' = overlay survei tahunan dimatikan
   var SURVEY_MONTH = 10;                            // 0-indexed → 10 = November
+  // SURVEY_AKTIF diambil dari tab Pengaturan (backend) via getPublicConfig — bisa on/off tanpa redeploy.
   function _cfg(v) { return v && v.indexOf('__') !== 0; } // placeholder belum di-inject?
   var S = window.SIMKERMA = { GAS_URL: GAS_URL };
 
@@ -235,12 +235,26 @@
       });
       this._maybeOverlay();
     },
-    // Overlay wajib muncul sekali/tahun (mulai November) — bisa dimatikan via SURVEY_AKTIF.
+    // Overlay wajib muncul sekali/tahun (mulai November). Toggle SURVEY_AKTIF dibaca
+    // dari tab Pengaturan (backend) via getPublicConfig, di-cache ~6 jam di localStorage.
     _maybeOverlay: function () {
-      if (!SURVEY_AKTIF || !_cfg(RATING_URL)) return;
+      if (!_cfg(RATING_URL)) return;
       if (new Date().getMonth() < SURVEY_MONTH) return;
       if (this._isDone()) return;
-      this._showOverlay();
+      var self = this;
+      this._surveyAktif(function (aktif) { if (aktif) self._showOverlay(); });
+    },
+    _surveyAktif: function (cb) {
+      var TTL = 6 * 60 * 60 * 1000, now = Date.now();
+      try {
+        var c = JSON.parse(localStorage.getItem('simkerma_pubcfg') || 'null');
+        if (c && c.exp > now) { cb(!!c.surveyAktif); return; }
+      } catch (e) { }
+      S.api.get('getPublicConfig').then(function (r) {
+        var aktif = !!(r && r.surveyAktif);
+        try { localStorage.setItem('simkerma_pubcfg', JSON.stringify({ surveyAktif: aktif, exp: now + TTL })); } catch (e) { }
+        cb(aktif);
+      }).catch(function () { cb(false); }); // gagal ambil config → jangan tampilkan
     },
     _showOverlay: function () {
       var self = this;

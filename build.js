@@ -10,7 +10,7 @@ const ADMIN_PASSWORD          = process.env.ADMIN_PASSWORD          || '';
 const BUG_URL                 = process.env.BUG_URL                 || '';
 const RATING_URL              = process.env.RATING_URL              || '';
 const RATING_OVERRIDE_PASSWORD = process.env.RATING_OVERRIDE_PASSWORD || '';
-const SURVEY_AKTIF            = process.env.SURVEY_AKTIF            || '1'; // '0' = matikan overlay survei tahunan
+// Catatan: SURVEY_AKTIF (on/off overlay survei) kini diatur dari tab Pengaturan, bukan env.
 
 if (!GAS_URL) { console.error('ERROR: GAS_URL tidak diset. Set di Vercel atau file .env'); process.exit(1); }
 
@@ -24,8 +24,7 @@ const inject = (s) => s
   .replaceAll('__ADMIN_PASSWORD__',          ADMIN_PASSWORD)
   .replaceAll('__BUG_URL__',                 BUG_URL)
   .replaceAll('__RATING_URL__',              RATING_URL)
-  .replaceAll('__RATING_OVERRIDE_PASSWORD__', RATING_OVERRIDE_PASSWORD)
-  .replaceAll('__SURVEY_AKTIF__',            SURVEY_AKTIF);
+  .replaceAll('__RATING_OVERRIDE_PASSWORD__', RATING_OVERRIDE_PASSWORD);
 
 // 1) Halaman HTML (root dist) — dengan injeksi env
 ['index.html', 'form.html', 'data.html'].forEach(file => {
