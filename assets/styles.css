@@ -1488,3 +1488,9 @@ mark {
 .surv-act{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
 .surv-act .btn{text-decoration:none}
 @media (max-width:480px){#aduanMenu{width:210px}}
+
+/* ===== Pintasan edit Tindak Lanjut di tabel ===== */
+.tl-cell{display:inline-flex;align-items:center;gap:6px}
+.tl-edit{border:1px solid var(--line);background:var(--surface);color:var(--muted);width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:11px;line-height:1;padding:0;transition:border-color var(--tr),color var(--tr)}
+.tl-edit:hover{border-color:var(--accent);color:var(--accent)}
+#tlModal .box{max-width:380px}

@@ -190,7 +190,16 @@ document.getElementById('form').addEventListener('submit', async (e) => {
   const fileInput = document.getElementById('file'), theFile = fileInput.files[0];
   if (theFile && theFile.size > 10 * 1024 * 1024) { show('err', 'Ukuran berkas ' + (theFile.size / 1048576).toFixed(1) + ' MB melebihi batas 10 MB. Mohon kompres dulu.'); return; }
 
-  btn.disabled = true; overlay(true, theFile ? 'Mengunggah berkas & menyimpan…' : 'Mengirim data…');
+  // Overlay bertahap — mencerminkan urutan kerja backend (indikatif, karena 1 request).
+  btn.disabled = true;
+  const steps = [];
+  if (theFile) steps.push('📎 Menyiapkan berkas…');
+  steps.push(EDIT_ID ? '📝 Menyiapkan perubahan…' : (MODE === 'Perpanjangan' ? '🔗 Menautkan perpanjangan & data mitra…' : '🏢 Menyimpan data mitra…'));
+  if (theFile) steps.push('☁️ Mengunggah dokumen ke Google Drive…');
+  steps.push('🧾 Menulis baris ke spreadsheet…');
+  steps.push('✅ Menyelesaikan…');
+  let _si = 0; overlay(true, steps[0]);
+  const stepTimer = setInterval(() => { if (_si < steps.length - 1) overlay(true, steps[++_si]); }, 1200);
   const file = await readFile(fileInput);
   const payload = {
     action: 'submitKerjasama', jenisEntri: MODE,
@@ -210,6 +219,7 @@ document.getElementById('form').addEventListener('submit', async (e) => {
 
   try {
     const res = await api.post(payload);
+    clearInterval(stepTimer);
     if (res.status === 'success' && res.updated) { overlay(false); show('ok', '✅ Perubahan tersimpan. Mengalihkan ke halaman Data…'); setTimeout(() => location.href = 'data.html', 900); }
     else if (res.status === 'success') {
       overlay(false);
@@ -222,8 +232,8 @@ document.getElementById('form').addEventListener('submit', async (e) => {
     }
     else if (res.auth) { overlay(false); gate.clear(); gate.prompt('Kata sandi salah. Coba lagi.', () => document.getElementById('form').requestSubmit(), { mandatory: true }); }
     else { overlay(false); show('err', 'Gagal: ' + (res.error || 'tidak diketahui')); }
-  } catch (err) { overlay(false); show('err', 'Gagal mengirim: ' + esc(err.message)); }
-  finally { overlay(false); btn.disabled = false; if (!EDIT_ID) btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Kerja Sama'; }
+  } catch (err) { clearInterval(stepTimer); overlay(false); show('err', 'Gagal mengirim: ' + esc(err.message)); }
+  finally { clearInterval(stepTimer); overlay(false); btn.disabled = false; if (!EDIT_ID) btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Kerja Sama'; }
 });
 
 // Dropzone: klik untuk pilih + drag & drop

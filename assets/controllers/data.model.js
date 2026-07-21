@@ -26,7 +26,7 @@
       { key: 'sisa', label: 'Sisa', num: true, nowrap: true },
       { key: 'biaya', label: 'Biaya', num: true, nowrap: true, hidden: true },
       { key: 'status', label: 'Status', filter: 'select' },
-      { key: 'tindakLanjut', label: 'Tindak Lanjut', filter: 'select', hidden: true }
+      { key: 'tindakLanjut', label: 'Tindak Lanjut', filter: 'select' }
     ],
 
     // ---- Akses data ----
@@ -97,6 +97,18 @@
     selectView: function (on) { var self = this; this.view.forEach(function (k) { on ? self.selected.add(k.id) : self.selected.delete(k.id); }); },
     clearSelect: function () { this.selected.clear(); },
     selectedInView: function () { var s = this.selected; return this.view.filter(function (k) { return s.has(k.id); }).map(function (k) { return k.id; }); },
+
+    // ---- Ubah Tindak Lanjut (pintasan dari tabel) ----
+    setTindak: function (id, val) {
+      return api.post({ action: 'setTindakLanjut', id: id, tindakLanjut: val, password: gate.pw }).then(function (res) {
+        if (res.status === 'success') {
+          var row = M.all.filter(function (x) { return x.id === id; })[0];
+          if (row) row.tindakLanjut = (res.tindakLanjut != null ? res.tindakLanjut : val);
+          M.compute();
+        }
+        return res;
+      });
+    },
 
     // ---- CRUD (hapus) ----
     del: function (id) {

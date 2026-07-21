@@ -220,7 +220,7 @@ function doPost(e) {
   const action = payload.action || '';
   let result;
   try {
-    const perluAuth = ['submitKerjasama', 'deleteKerjasama', 'tambahDataset', 'updatePengaturan', 'runReminder'];
+    const perluAuth = ['submitKerjasama', 'deleteKerjasama', 'tambahDataset', 'updatePengaturan', 'runReminder', 'setTindakLanjut'];
     if (perluAuth.indexOf(action) > -1 && !_authOk(payload)) {
       result = { status: 'error', error: 'Kata sandi salah.', auth: true };
     }
@@ -228,6 +228,7 @@ function doPost(e) {
     else if (action === 'deleteKerjasama')   result = deleteKerjasama(payload.id);
     else if (action === 'tambahDataset')     result = _addDatasetValue(payload.kategori, payload.nilai);
     else if (action === 'updatePengaturan')  result = _updatePengaturan(payload);
+    else if (action === 'setTindakLanjut')   result = setTindakLanjut(payload.id, payload.tindakLanjut);
     else if (action === 'runReminder')       result = cekDanKirimReminder(true);
     else result = { status: 'error', error: 'Action tidak dikenal: ' + action };
   } catch (err) {
@@ -459,6 +460,20 @@ function _tandaiDiperpanjang(oldId, newId) {
   const cCat = HEADERS_KERJASAMA.indexOf('Catatan') + 1;
   const cat = String(found.data[cCat - 1] || '').trim();
   sheet.getRange(found.rowIndex, cCat).setValue((cat ? cat + ' | ' : '') + 'Diperpanjang oleh ' + newId);
+}
+
+// Ubah HANYA kolom Tindak Lanjut (pintasan dari halaman Data). Bergerbang sandi via doPost.
+function setTindakLanjut(id, val) {
+  const allowed = ['', 'Sedang Diproses', 'Diperpanjang', 'Tidak Diperpanjang', 'Selesai / Arsip'];
+  val = String(val == null ? '' : val).trim();
+  if (allowed.indexOf(val) === -1) return { status: 'error', error: 'Nilai Tindak Lanjut tidak dikenal: ' + val };
+  const found = _findKerjasamaRow(id);
+  if (!found) return { status: 'error', error: 'Kerja sama tidak ditemukan: ' + id };
+  const col = HEADERS_KERJASAMA.indexOf('Tindak Lanjut') + 1;
+  if (col <= 0) return { status: 'error', error: 'Kolom Tindak Lanjut belum ada di sheet.' };
+  _kerjasamaSheet().getRange(found.rowIndex, col).setValue(val);
+  SpreadsheetApp.flush();
+  return { status: 'success', id: id, tindakLanjut: val };
 }
 
 // Hapus satu kerja sama (admin, bergerbang sandi lewat doPost)

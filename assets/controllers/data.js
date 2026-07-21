@@ -29,11 +29,14 @@
     pengguna: k => ell(k.pengguna), wilayah: k => ell(k.wilayah), mulai: k => esc(k.mulai),
     berakhir: k => esc(k.berakhir), sisa: k => ui.sisa(k.sisa), biaya: k => money(k.biaya), status: k => ui.badge(k.status),
     tindakLanjut: k => {
-      const v = String(k.tindakLanjut || '').trim(); if (!v) return '<span class="muted">—</span>';
+      const v = String(k.tindakLanjut || '').trim();
       const stop = /^(diperpanjang|tidak diperpanjang|selesai)/i.test(v);
-      return '<span class="badge ' + (stop ? 'b-gray' : 'b-amber') + '">' + esc(v) + '</span>';
+      const badge = v ? '<span class="badge ' + (stop ? 'b-gray' : 'b-amber') + '">' + esc(v) + '</span>' : '<span class="muted">—</span>';
+      const pen = isAdmin() ? ' <button class="tl-edit" data-tl="' + esc(k.id) + '" title="Ubah tindak lanjut"><i class="fa-solid fa-pen"></i></button>' : '';
+      return '<span class="tl-cell">' + badge + pen + '</span>';
     }
   };
+  const TL_OPTS = ['', 'Sedang Diproses', 'Diperpanjang', 'Tidak Diperpanjang', 'Selesai / Arsip'];
   function isAdmin() { return document.body.classList.contains('admin'); }
 
   // ---- Load ----
@@ -148,6 +151,7 @@
   $('body').addEventListener('click', e => {
     const ed = e.target.closest('[data-edit]'); if (ed) { location.href = 'form.html?edit=' + encodeURIComponent(ed.dataset.edit); return; }
     const dl = e.target.closest('[data-del]'); if (dl) { delRow(dl.dataset.del); return; }
+    const tl = e.target.closest('[data-tl]'); if (tl) { openTindak(tl.dataset.tl); return; }
     if (e.target.closest('a,button,input,label')) return;
     const tr = e.target.closest('tr[data-id]'); if (tr) { M.toggleExpand(tr.dataset.id); render(); }
   });
@@ -188,6 +192,41 @@
       else if (res.auth) { gate.clear(); gate.prompt('Sandi salah, coba lagi.', () => delRow(id)); }
       else alert('Gagal: ' + (res.error || 'tidak diketahui'));
     } catch (e) { alert('Gagal menghapus: ' + e.message); }
+  }
+  // Pintasan ubah Tindak Lanjut (modal, tanpa buka form.html)
+  async function openTindak(id) {
+    const k = M.all.find(x => x.id === id); if (!k) return;
+    let m = document.getElementById('tlModal');
+    if (!m) {
+      m = document.createElement('div'); m.id = 'tlModal'; m.className = 'modal';
+      m.innerHTML = '<div class="box" style="text-align:left"><h3 style="margin:0 0 2px"><i class="fa-solid fa-flag-checkered"></i> Tindak Lanjut</h3>' +
+        '<p class="muted tlsub" style="margin:0 0 12px"></p>' +
+        '<select class="tlsel" style="width:100%"></select>' +
+        '<div class="hint" style="margin-top:6px">Diperpanjang / Tidak Diperpanjang / Selesai → <b>pengingat berhenti</b>. Kosong / Sedang Diproses → tetap diingatkan.</div>' +
+        '<div class="tlmsg" style="color:var(--red);font-size:13px;margin-top:8px"></div>' +
+        '<div style="display:flex;gap:8px;margin-top:14px">' +
+        '<button class="btn outline tlcancel" style="flex:1">Batal</button>' +
+        '<button class="btn primary tlok" style="flex:1"><i class="fa-solid fa-floppy-disk"></i> Simpan</button></div></div>';
+      document.body.appendChild(m);
+      m.querySelector('.tlcancel').onclick = () => m.classList.remove('on');
+      m.addEventListener('mousedown', e => { if (e.target === m) m.classList.remove('on'); });
+    }
+    const sel = m.querySelector('.tlsel'), msg = m.querySelector('.tlmsg');
+    sel.innerHTML = TL_OPTS.map(o => '<option value="' + esc(o) + '">' + (o || '— (kosong: terus diingatkan)') + '</option>').join('');
+    sel.value = String(k.tindakLanjut || ''); msg.textContent = '';
+    m.querySelector('.tlsub').textContent = k.namaMitra + ' — ' + (k.nomorSurat || k.bentuk || '');
+    m.classList.add('on');
+    m.querySelector('.tlok').onclick = async () => {
+      if (authRequired && !gate.pw) { gate.prompt('Masukkan kata sandi untuk menyimpan.', () => openTindak(id), { mandatory: true }); return; }
+      SIMKERMA.overlay(true, 'Menyimpan tindak lanjut…');
+      try {
+        const res = await M.setTindak(id, sel.value);
+        SIMKERMA.overlay(false);
+        if (res.status === 'success') { m.classList.remove('on'); render(); }
+        else if (res.auth) { gate.clear(); gate.prompt('Sandi salah, coba lagi.', () => openTindak(id), { mandatory: true }); }
+        else msg.textContent = 'Gagal: ' + (res.error || 'tidak diketahui');
+      } catch (e) { SIMKERMA.overlay(false); msg.textContent = 'Gagal: ' + e.message; }
+    };
   }
   async function bulkDelete() {
     const ids = M.selectedInView(); if (!ids.length) return;
