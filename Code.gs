@@ -684,6 +684,63 @@ function _groupByMitra(due) {
   return order.map(k => g[k]);
 }
 
+// Diagnostik: jelaskan MENGAPA reminder terkirim/tidak — TANPA mengirim apa pun.
+// Jalankan dari editor, lalu buka menu "Execution log".
+function diagReminder() {
+  const s = _settings();
+  const zones = _parseCadence(s.REMINDER_CADENCE);
+  const grace = parseInt(s.GRACE_HABIS_HARI, 10) || 0;
+  const sheet = _kerjasamaSheet();
+  const { headers, rows } = _readAll(sheet);
+  const H = n => _colIndex(headers, n);
+  const colRem = H('Reminder Terakhir') + 1;
+  const today = _today();
+  const L = [];
+  L.push('=== DIAGNOSTIK REMINDER (tidak mengirim) ===');
+  L.push('Tanggal (WIB): ' + Utilities.formatDate(today, 'GMT+7', 'yyyy-MM-dd'));
+  L.push('Spreadsheet: ' + CONFIG.SPREADSHEET_ID);
+  L.push('EMAIL_AKTIF=' + s.EMAIL_AKTIF + ' | EMAIL_NOTIF="' + s.EMAIL_NOTIF + '"');
+  L.push('EMAIL_EKSTERNAL_AKTIF=' + s.EMAIL_EKSTERNAL_AKTIF + ' | WA_NOMOR_AKTIF=' + s.WA_NOMOR_AKTIF +
+    ' | WA_GRUP_AKTIF=' + s.WA_GRUP_AKTIF + ' | WA_EKSTERNAL_AKTIF=' + s.WA_EKSTERNAL_AKTIF);
+  L.push('REMINDER_CADENCE="' + s.REMINDER_CADENCE + '" | GRACE_HABIS_HARI=' + grace);
+  L.push('Total baris kerja sama: ' + rows.length);
+
+  let inWindow = 0, due = 0, suppressed = 0, noDate = 0;
+  const contohDue = [], contohSuppressed = [];
+  rows.forEach((r, i) => {
+    const bRaw = r[H('Tanggal Berakhir')];
+    const bDate = bRaw instanceof Date ? bRaw : _parseDate(bRaw);
+    if (!bDate) { noDate++; return; }
+    const { sisa } = _hitungStatus(bDate);
+    const iv = _intervalFor(sisa, zones, grace);
+    if (!iv) return;                       // di luar jendela pengingat
+    inWindow++;
+    const last = _lastRemindDate(r[colRem - 1]);
+    const gap = last ? Math.round((today - last) / 86400000) : null;
+    const nama = r[H('Nama Mitra')];
+    if (last && gap < iv) {
+      suppressed++;
+      if (contohSuppressed.length < 8) contohSuppressed.push(nama + ' (sisa ' + sisa + ', interval ' + iv + 'h, terakhir ' + gap + 'h lalu)');
+    } else {
+      due++;
+      if (contohDue.length < 8) contohDue.push(nama + ' (sisa ' + sisa + ', interval ' + iv + 'h)');
+    }
+  });
+
+  L.push('--- Ringkasan ---');
+  L.push('Tanpa tanggal berakhir: ' + noDate);
+  L.push('Masuk jendela pengingat: ' + inWindow);
+  L.push('AKAN dikirim (due): ' + due);
+  L.push('Ditahan cadence (belum waktunya): ' + suppressed);
+  if (contohDue.length) L.push('Contoh due: \n  - ' + contohDue.join('\n  - '));
+  if (contohSuppressed.length) L.push('Contoh ditahan: \n  - ' + contohSuppressed.join('\n  - '));
+  if (!due) L.push('>> KESIMPULAN: tidak ada yang dikirim karena due=0 (lihat sebab di atas). ' +
+    'Untuk uji paksa: kosongkan sel "Reminder Terakhir" pada baris yang Status-nya Segera/Habis, lalu run lagi.');
+  const out = L.join('\n');
+  Logger.log(out);
+  return out;
+}
+
 function cekDanKirimReminder(manual) {
   const s = _settings();
   const zones = _parseCadence(s.REMINDER_CADENCE);
