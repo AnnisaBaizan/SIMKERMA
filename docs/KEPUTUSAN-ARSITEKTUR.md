@@ -175,17 +175,28 @@ ke `assets/`) tanpa mengubah logika.
 
 ---
 
-## ADR-8 — Reminder: GAS trigger + MailApp (+ Fonnte WA opsional)
+## ADR-8 — Reminder: **cadence bertingkat** + notifikasi 2 pihak (GAS trigger + MailApp + Fonnte)
 
-**Keputusan.** Trigger harian (07:00 WIB) menjalankan `cekDanKirimReminder`, mengirim **email
-digest** (+ lampiran berkas) pada ambang H-90/60/30/7/0 & saat "baru habis"; WhatsApp opsional
-via Fonnte.
+**Keputusan.** Trigger harian (07:00 WIB) menjalankan `cekDanKirimReminder`. Pengingat memakai
+**cadence bertingkat** — makin dekat jatuh tempo makin sering — bukan "sekali per ambang".
+Setting `REMINDER_CADENCE` = `"sisa:interval"` (mis. `90:30,60:14,30:7,7:1`) + `GRACE_HABIS_HARI`
+(harian selama masa tenggang setelah berakhir). Dikirim ke **2 pihak**:
 
-**Alasan.** Penjadwalan & email **bawaan & gratis** — tak perlu server cron atau layanan email
-berbayar. **Digest** (satu email berisi banyak baris) hemat kuota (MailApp ±100/hari akun biasa)
-& tidak nge-spam. **Anti-spam**: tiap dokumen dikirim sekali per tahap.
+- **Internal** (tim): email **digest** (+ lampiran) & WA ke **nomor dan/atau grup** (toggle terpisah).
+- **Eksternal** (per mitra): email ke `PIC Email` (hanya kerja samanya) + WA opsional ke `PIC HP`.
+  **Default MATI**.
 
-**Alternatif.** Cron di server + SendGrid/Mailgun — lebih bertenaga tapi berbayar & butuh infra.
+**Alasan.** User butuh pengingat **berulang yang meningkat** (mis. bulanan → mingguan → harian),
+bukan satu kali per tahap. Kolom `Reminder Terakhir` kini menyimpan **tanggal** terakhir kirim;
+sistem cek `hari_ini − terakhir ≥ interval_zona`. Penjadwalan & email **bawaan & gratis**.
+
+**WA eksternal anti-blokir.** Karena mengirim WA ke banyak nomor tak dikenal berisiko memblokir
+nomor pengirim Fonnte, WA eksternal dibatasi `WA_EKSTERNAL_MAKS_PER_HARI` + jeda
+`WA_EKSTERNAL_JEDA_DETIK` antar-kirim; kelebihan digeser ke hari berikutnya. Kirim ke **grup** lebih
+hemat kuota (~1000 pesan/tahun Fonnte).
+
+**Alternatif ditolak.** Cron server + SendGrid/Mailgun (berbayar, butuh infra). "Sekali per ambang"
+(lama) — tidak cukup menekan agar ditindaklanjuti.
 
 ---
 
@@ -236,6 +247,43 @@ Pertimbangkan migrasi ke **database** (Postgres/MySQL/Firestore) **hanya bila**:
 Saat itu: Status/Sisa via *computed column*/view SQL + indeks tanggal + query berpaginasi
 (tak pernah memuat semua baris), agregasi dashboard via `GROUP BY` di server. Migrasi bisa
 **bertahap** karena data sudah rapi & ternormalisasi (Mitra vs Kerjasama).
+
+---
+
+## ADR-12 — Berhenti mengingatkan: kolom **Tindak Lanjut** + deteksi perpanjangan **by-Ref**
+
+**Keputusan.** Pengingat berhenti untuk sebuah kerja sama bila **kolom `Tindak Lanjut`** berisi
+status penutup (`Diperpanjang` / `Tidak Diperpanjang` / `Selesai`). Kosong atau `Sedang Diproses`
+= **terus diingatkan** (justru itu tujuannya: menekan sampai ada keputusan). Deteksi "sudah
+diperpanjang" memakai **tautan eksplisit by-ID** `Ref Kerjasama Sebelumnya`: saat Perpanjangan
+diinput, baris baru menunjuk ID kerja sama lama, dan backend **otomatis** menandai yang lama
+`Diperpanjang` (`_tandaiDiperpanjang`) → pengingatnya berhenti.
+
+**Alasan.** Aturan harus **eksplisit & tak ambigu**. Alternatif *implicit grouping* (menebak dari
+`mitra + bentuk + pengguna` lalu ambil yang terbaru) **ditolak**: pada data asli, satu mitra sering
+punya **beberapa PKS berbeda yang sah** dengan kombinasi sama, sehingga tebakan bisa keliru
+"menelan" kerja sama yang sebenarnya beda. `Tindak Lanjut` juga menangani data historis (yang tak
+punya rantai Ref) secara manual, sekaligus kasus "memang tak diperpanjang".
+
+**Konsekuensi.** Form Perpanjangan kini **wajib** memilih kerja sama sebelumnya (memperbaiki bug
+lama yang menyimpan *id mitra* sebagai Ref). Fungsi diagnostik `diagReminder()` menghitung berapa
+baris ditutup Tindak Lanjut.
+
+---
+
+## ADR-13 — Konfigurasi runtime dari **tab Pengaturan** + halaman UI Pengaturan
+
+**Keputusan.** Toggle operasional (mis. `SURVEY_AKTIF`, aktif/nonaktif kanal notif, cadence)
+tinggal di **tab Pengaturan** (dibaca `getPengaturan`/`getPublicConfig`), **bukan** env build.
+Disediakan halaman **`pengaturan.html`** untuk mengubahnya dari web (bergerbang sandi via
+`updatePengaturan`), tanpa perlu buka spreadsheet atau redeploy.
+
+**Alasan.** Perubahan operasional harus bisa dilakukan admin **tanpa deploy ulang** dan tanpa
+menyentuh kode. Rahasia (`ADMIN_PASSWORD`, `WA_TOKEN`) **tetap** di `CONFIG` Code.gs (server-side),
+tidak pernah dikirim ke frontend. URL Google Form (bug/survei) tetap env build (config sekali-set).
+
+**Konsekuensi.** `getPublicConfig` di-cache ~6 jam di `localStorage` agar overlay survei tak
+mem-fetch tiap halaman; `runReminder` kini butuh sandi (hardening).
 
 ---
 
