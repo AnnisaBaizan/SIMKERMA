@@ -6,6 +6,12 @@
    ============================================================ */
 (function () {
   var GAS_URL = "__GAS_URL__";
+  var BUG_URL = "__BUG_URL__";
+  var RATING_URL = "__RATING_URL__";
+  var RATING_OVERRIDE_PW = "__RATING_OVERRIDE_PASSWORD__";
+  var SURVEY_AKTIF = "__SURVEY_AKTIF__" !== "0";   // '0' = overlay survei tahunan dimatikan
+  var SURVEY_MONTH = 10;                            // 0-indexed → 10 = November
+  function _cfg(v) { return v && v.indexOf('__') !== 0; } // placeholder belum di-inject?
   var S = window.SIMKERMA = { GAS_URL: GAS_URL };
 
   // ---- Util ----
@@ -199,4 +205,70 @@
   S.searchify = function (ids) {
     (ids || []).forEach(function (id) { S.searchSelect(document.getElementById(id)); });
   };
+
+  // ---- Aduan (Lapor Bug + Nilai Aplikasi) & survei tahunan (self-inject, semua halaman) ----
+  S.aduan = {
+    _key: function () { return 'simkerma_rating_done_' + new Date().getFullYear(); },
+    markDone: function () { try { localStorage.setItem(this._key(), '1'); } catch (e) { } },
+    _isDone: function () { try { return localStorage.getItem(this._key()) === '1'; } catch (e) { return false; } },
+    mount: function () {
+      if (document.getElementById('aduanWrap')) return;
+      var self = this, bugOk = _cfg(BUG_URL), rateOk = _cfg(RATING_URL);
+      var wrap = document.createElement('div'); wrap.id = 'aduanWrap';
+      wrap.innerHTML =
+        '<div id="aduanMenu">' +
+        '<a id="aduanBug" href="' + (bugOk ? BUG_URL : '#') + '" target="_blank" rel="noopener">' +
+        '<span class="ad-ic">🐛</span><span class="ad-tx"><b>Lapor Bug</b><small>Laporkan masalah / error</small></span></a>' +
+        '<a id="aduanRate" href="' + (rateOk ? RATING_URL : '#') + '" target="_blank" rel="noopener">' +
+        '<span class="ad-ic">⭐</span><span class="ad-tx"><b>Nilai Aplikasi</b><small>Beri penilaian &amp; saran</small></span></a>' +
+        '</div>' +
+        '<button id="btnAduan" type="button" title="Aduan &amp; Penilaian Aplikasi"><i class="fa-solid fa-comment-dots"></i> Aduan</button>';
+      document.body.appendChild(wrap);
+      wrap.querySelector('#btnAduan').addEventListener('click', function (e) { e.stopPropagation(); wrap.classList.toggle('open'); });
+      document.addEventListener('click', function (e) { if (!wrap.contains(e.target)) wrap.classList.remove('open'); });
+      wrap.querySelector('#aduanBug').addEventListener('click', function (e) {
+        if (!bugOk) { e.preventDefault(); alert('Form Lapor Bug belum dikonfigurasi.\nSet env BUG_URL di Vercel.'); }
+      });
+      wrap.querySelector('#aduanRate').addEventListener('click', function (e) {
+        if (!rateOk) { e.preventDefault(); alert('Form Penilaian belum dikonfigurasi.\nSet env RATING_URL di Vercel.'); return; }
+        self.markDone(); wrap.classList.remove('open');
+      });
+      this._maybeOverlay();
+    },
+    // Overlay wajib muncul sekali/tahun (mulai November) — bisa dimatikan via SURVEY_AKTIF.
+    _maybeOverlay: function () {
+      if (!SURVEY_AKTIF || !_cfg(RATING_URL)) return;
+      if (new Date().getMonth() < SURVEY_MONTH) return;
+      if (this._isDone()) return;
+      this._showOverlay();
+    },
+    _showOverlay: function () {
+      var self = this;
+      var ov = document.createElement('div'); ov.id = 'survOverlay';
+      ov.innerHTML = '<div class="surv-modal">' +
+        '<div class="surv-ic">⭐</div>' +
+        '<h2>Penilaian Tahunan SIMKERMA</h2>' +
+        '<p>Tahun ini hampir berakhir. Mohon luangkan 5–10 menit untuk menilai aplikasi SIMKERMA — ' +
+        'hasilnya menjadi bahan laporan tahunan &amp; arah pengembangan.</p>' +
+        '<div class="surv-act">' +
+        '<a class="btn primary" id="survGo" href="' + RATING_URL + '" target="_blank" rel="noopener">📝 Isi Survey Sekarang</a>' +
+        '<button type="button" class="btn outline" id="survOverride">🔒 Override (Admin)</button>' +
+        '</div>' +
+        '<small class="muted">Muncul sekali per tahun (mulai November) sebagai bahan laporan tahunan.</small>' +
+        '</div>';
+      document.body.appendChild(ov);
+      ov.querySelector('#survGo').addEventListener('click', function () { self.markDone(); self._hideOverlay(); });
+      ov.querySelector('#survOverride').addEventListener('click', function () { self._override(); });
+    },
+    _hideOverlay: function () { var ov = document.getElementById('survOverlay'); if (ov) ov.remove(); },
+    _override: function () {
+      if (!_cfg(RATING_OVERRIDE_PW)) { alert('Kata sandi override belum dikonfigurasi.'); return; }
+      var pw = prompt('Kata sandi admin untuk melewati survei tahun ini:');
+      if (pw === null) return;
+      if (pw === RATING_OVERRIDE_PW) { this.markDone(); this._hideOverlay(); }
+      else alert('Kata sandi salah.');
+    }
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { S.aduan.mount(); });
+  else S.aduan.mount();
 })();

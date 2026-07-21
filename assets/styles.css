@@ -1465,3 +1465,26 @@ mark {
 .tablewrap tr.row-habis>td:first-child{box-shadow:inset 3px 0 0 var(--red)}
 .tablewrap tr.row-segera>td:first-child{box-shadow:inset 3px 0 0 var(--amber)}
 .tablewrap tr.row-aktif>td:first-child{box-shadow:inset 3px 0 0 var(--green)}
+
+/* ===== Aduan (Lapor Bug + Nilai Aplikasi) & survei tahunan ===== */
+#aduanWrap{position:fixed;right:18px;bottom:18px;z-index:1200;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+#btnAduan{border:0;background:var(--accent);color:#fff;font-weight:600;font-size:14px;padding:11px 16px;border-radius:999px;box-shadow:var(--shadow-lg);cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:background var(--tr),transform var(--tr)}
+#btnAduan:hover{background:var(--accent-d);transform:translateY(-1px)}
+#btnAduan i{font-size:15px}
+#aduanMenu{display:none;flex-direction:column;gap:8px;width:246px}
+#aduanWrap.open #aduanMenu{display:flex;animation:aduanIn .16s ease}
+@keyframes aduanIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#aduanMenu a{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px 13px;text-decoration:none;color:var(--txt);box-shadow:var(--shadow-md);transition:border-color var(--tr),transform var(--tr)}
+#aduanMenu a:hover{border-color:var(--accent);transform:translateX(-2px)}
+#aduanMenu .ad-ic{font-size:20px;line-height:1;flex:0 0 auto}
+#aduanMenu .ad-tx b{display:block;font-size:13.5px}
+#aduanMenu .ad-tx small{display:block;color:var(--muted);font-size:11.5px;margin-top:1px}
+/* Overlay survei tahunan */
+#survOverlay{position:fixed;inset:0;z-index:1300;background:rgba(15,20,32,.55);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px;animation:aduanIn .2s ease}
+.surv-modal{background:var(--surface);border-radius:var(--radius);max-width:440px;width:100%;padding:28px 26px;text-align:center;box-shadow:var(--shadow-lg)}
+.surv-ic{font-size:44px;line-height:1;margin-bottom:6px}
+.surv-modal h2{margin:.25em 0 .1em;font-size:20px;color:var(--ink)}
+.surv-modal p{color:var(--muted);font-size:14px;line-height:1.55;margin:8px 0 18px}
+.surv-act{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.surv-act .btn{text-decoration:none}
+@media (max-width:480px){#aduanMenu{width:210px}}

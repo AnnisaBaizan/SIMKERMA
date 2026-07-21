@@ -46,6 +46,7 @@ Pola arsitektur sama dengan project **SimpelBMN** & **Jum'at Bersih**:
 - Upload berkas MoU/PKS → **Google Drive**, tautannya tercatat di baris.
 - **Reminder otomatis harian (07:00 WIB)** dengan **cadence bertingkat** — makin dekat jatuh tempo makin sering (mis. ≤90 hari tiap 30h, ≤60 tiap 14h, ≤30 tiap 7h, ≤7 **harian**), lalu harian selama masa tenggang setelah berakhir. Dikirim ke **2 pihak**: rekap **internal** (Email + WhatsApp: nomor &/atau grup) dan **eksternal per mitra** (Email + opsional WhatsApp ke PIC, dengan **batas/throttle anti-blokir**). Satu **email digest** internal + **lampiran berkas**.
 - **Gerbang kata sandi** untuk operasi tulis, **diverifikasi server-side**.
+- **Tombol Aduan mengambang** di semua halaman: 🐛 **Lapor Bug** & ⭐ **Nilai Aplikasi** (Google Form), plus **overlay survei tahunan** (muncul sekali/tahun mulai November, dilacak `localStorage` + override admin). Overlay bisa **dimatikan** via env `SURVEY_AKTIF=0`.
 - Utilitas: `setupAwal`, `sinkronkanPengaturan`, `migrasiDataLama` (aman dari dobel), `refreshSemuaStatus`, `pasangTriggerReminder`.
 
 **Dashboard (`index.html`)**
@@ -139,7 +140,7 @@ MODEL                   assets/controllers/data.model.js  → window.DataModel: 
   (`{ key, label, filter:'select'|'year', num, cls, hidden }`); header, sel, filter dinamis, dan
   visibilitas kolom menyesuaikan sendiri.
 
-`build.js` meng-_inject_ `GAS_URL` (juga `ADMIN_PASSWORD`, `BUG_URL` bila diisi) ke HTML + `app.js`
+`build.js` meng-_inject_ `GAS_URL` (juga `ADMIN_PASSWORD`, `BUG_URL`, `RATING_URL`, `RATING_OVERRIDE_PASSWORD`, `SURVEY_AKTIF` bila diisi) ke HTML + `app.js`
 
 - `components.js` + `controllers/*.js`, menyalin `styles.css`, lalu menaruh semua ke `dist/`.
 
