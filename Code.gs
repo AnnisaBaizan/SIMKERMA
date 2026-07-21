@@ -37,11 +37,23 @@ const CONFIG = {
   NAMA_INSTANSI: 'Politeknik Kesehatan Kemenkes Palembang',
   EMAIL_NOTIF:   'lukman@poltekkespalembang.ac.id, kerjasama@poltekkespalembang.ac.id, okta@poltekkespalembang.ac.id',
   BASE_URL:      'https://simkerma.vercel.app',
-  REMINDER_HARI: '90,60,30,7,0',  // ambang H- (hari). 0 = hari berakhir
-  EMAIL_AKTIF:   true,
-  WA_AKTIF:      false,            // aktifkan setelah WA_TOKEN & WA_TARGET diisi
-  WA_TARGET:     '',              // nomor WA tujuan, pisahkan dengan koma (mis. 6281xxxx)
-  LAMPIRKAN_FILE: true,           // lampirkan file MoU/PKS pada email reminder
+  // Reminder — cadence bertingkat: "sisa:interval" (hari). Makin dekat jatuh tempo, makin sering.
+  REMINDER_CADENCE: '90:30,60:14,30:7,7:1', // sisa<=90 tiap 30h, <=60 tiap 14h, <=30 tiap 7h, <=7 harian
+  GRACE_HABIS_HARI: 14,            // setelah berakhir, tetap ingatkan harian s.d. N hari lalu berhenti
+
+  // Notifikasi INTERNAL (tim Poltekkes) — rekap semua yang jatuh tempo
+  EMAIL_AKTIF:    true,            // email rekap ke EMAIL_NOTIF
+  WA_NOMOR_AKTIF: false,           // WA rekap ke nomor perorangan (WA_TARGET)
+  WA_TARGET:      '',              // nomor WA tim, pisahkan koma (mis. 62812xxxx)
+  WA_GRUP_AKTIF:  false,           // WA rekap ke grup (WA_GRUP_ID)
+  WA_GRUP_ID:     '',              // ID grup WhatsApp (Fonnte) untuk rekap internal
+  LAMPIRKAN_FILE: true,            // lampirkan file MoU/PKS pada email
+
+  // Notifikasi EKSTERNAL (ke PIC mitra) — DEFAULT MATI, nyalakan saat sudah siap
+  EMAIL_EKSTERNAL_AKTIF: false,    // email ke PIC mitra (hanya kerja sama miliknya)
+  WA_EKSTERNAL_AKTIF:    false,    // WA ke PIC mitra — RISIKO nomor Fonnte diblokir bila banyak
+  WA_EKSTERNAL_MAKS_PER_HARI: 8,   // batas jumlah WA eksternal per hari (anti-blokir)
+  WA_EKSTERNAL_JEDA_DETIK:    8,   // jeda antar-kirim WA eksternal (detik), anti-burst
 };
 
 // ==================== HEADERS ====================
@@ -94,17 +106,42 @@ const DATASET_SEED = {
 
 // ==================== PENGATURAN (dinamis) ====================
 let _settingsCache = null;
+function _defaultSettings() {
+  return {
+    NAMA_INSTANSI: CONFIG.NAMA_INSTANSI, EMAIL_NOTIF: CONFIG.EMAIL_NOTIF, BASE_URL: CONFIG.BASE_URL,
+    REMINDER_CADENCE: CONFIG.REMINDER_CADENCE, GRACE_HABIS_HARI: CONFIG.GRACE_HABIS_HARI,
+    EMAIL_AKTIF: CONFIG.EMAIL_AKTIF, WA_NOMOR_AKTIF: CONFIG.WA_NOMOR_AKTIF, WA_TARGET: CONFIG.WA_TARGET,
+    WA_GRUP_AKTIF: CONFIG.WA_GRUP_AKTIF, WA_GRUP_ID: CONFIG.WA_GRUP_ID, LAMPIRKAN_FILE: CONFIG.LAMPIRKAN_FILE,
+    EMAIL_EKSTERNAL_AKTIF: CONFIG.EMAIL_EKSTERNAL_AKTIF, WA_EKSTERNAL_AKTIF: CONFIG.WA_EKSTERNAL_AKTIF,
+    WA_EKSTERNAL_MAKS_PER_HARI: CONFIG.WA_EKSTERNAL_MAKS_PER_HARI, WA_EKSTERNAL_JEDA_DETIK: CONFIG.WA_EKSTERNAL_JEDA_DETIK,
+  };
+}
+function _settingKeterangan() {
+  return {
+    NAMA_INSTANSI:  'Nama instansi pada notifikasi',
+    EMAIL_NOTIF:    'Email tim INTERNAL penerima rekap (pisahkan koma)',
+    BASE_URL:       'Domain aplikasi (ubah saat pindah domain instansi)',
+    REMINDER_CADENCE: 'Jadwal ingat "sisa:interval" hari. Makin dekat makin sering. Mis. 90:30,60:14,30:7,7:1',
+    GRACE_HABIS_HARI: 'Setelah berakhir, tetap ingatkan harian sampai N hari, lalu berhenti',
+    EMAIL_AKTIF:    'Aktifkan email rekap INTERNAL (TRUE/FALSE)',
+    WA_NOMOR_AKTIF: 'Aktifkan WA rekap ke NOMOR perorangan tim (TRUE/FALSE)',
+    WA_TARGET:      'Nomor WA tim internal (mis. 62812xxxx), pisahkan koma',
+    WA_GRUP_AKTIF:  'Aktifkan WA rekap ke GRUP (TRUE/FALSE)',
+    WA_GRUP_ID:     'ID grup WhatsApp (Fonnte) untuk rekap internal',
+    LAMPIRKAN_FILE: 'Lampirkan file MoU/PKS pada email (TRUE/FALSE)',
+    EMAIL_EKSTERNAL_AKTIF: 'Aktifkan EMAIL ke PIC mitra — hanya kerja sama miliknya (TRUE/FALSE)',
+    WA_EKSTERNAL_AKTIF: 'HATI-HATI: WA ke PIC mitra. Bila banyak, nomor Fonnte bisa diblokir (TRUE/FALSE)',
+    WA_EKSTERNAL_MAKS_PER_HARI: 'Batas jumlah WA eksternal per hari (anti-blokir). Mis. 8',
+    WA_EKSTERNAL_JEDA_DETIK: 'Jeda antar kirim WA eksternal dalam detik (anti-burst). Mis. 8',
+  };
+}
 function _settings() {
   if (_settingsCache) return _settingsCache;
-  const s = {
-    NAMA_INSTANSI: CONFIG.NAMA_INSTANSI, EMAIL_NOTIF: CONFIG.EMAIL_NOTIF, BASE_URL: CONFIG.BASE_URL,
-    REMINDER_HARI: CONFIG.REMINDER_HARI, EMAIL_AKTIF: CONFIG.EMAIL_AKTIF, WA_AKTIF: CONFIG.WA_AKTIF,
-    WA_TARGET: CONFIG.WA_TARGET, LAMPIRKAN_FILE: CONFIG.LAMPIRKAN_FILE,
-  };
+  const s = _defaultSettings();
   try {
     const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
     let sheet = ss.getSheetByName(CONFIG.PENGATURAN_SHEET);
-    if (!sheet) { sheet = ss.insertSheet(CONFIG.PENGATURAN_SHEET); _seedPengaturan(sheet, s); }
+    if (!sheet) { sheet = ss.insertSheet(CONFIG.PENGATURAN_SHEET); _seedPengaturan(sheet); }
     const lastRow = sheet.getLastRow();
     if (lastRow >= 2) {
       sheet.getRange(2, 1, lastRow - 1, 2).getValues().forEach(r => {
@@ -121,22 +158,27 @@ function _settings() {
   return s;
 }
 
-function _seedPengaturan(sheet, s) {
+function _seedPengaturan(sheet) {
+  const s = _defaultSettings(), ket = _settingKeterangan();
   sheet.appendRow(['Kunci', 'Nilai', 'Keterangan']);
   sheet.getRange(1, 1, 1, 3).setFontWeight('bold');
-  const ket = {
-    NAMA_INSTANSI:  'Nama instansi pada notifikasi',
-    EMAIL_NOTIF:    'Penerima notifikasi reminder (pisahkan dengan koma)',
-    BASE_URL:       'Domain aplikasi (ubah saat pindah domain instansi)',
-    REMINDER_HARI:  'Ambang reminder H- dalam hari, pisahkan koma. 0 = hari berakhir',
-    EMAIL_AKTIF:    'Aktifkan notifikasi Email (TRUE/FALSE)',
-    WA_AKTIF:       'Aktifkan notifikasi WhatsApp (TRUE/FALSE)',
-    WA_TARGET:      'Nomor WhatsApp tujuan (mis. 62812xxxx), pisahkan koma',
-    LAMPIRKAN_FILE: 'Lampirkan file MoU/PKS pada email reminder (TRUE/FALSE)',
-  };
   Object.keys(s).forEach(k => sheet.appendRow([k, s[k], ket[k] || '']));
   sheet.setFrozenRows(1);
-  sheet.setColumnWidth(1, 160); sheet.setColumnWidth(2, 360); sheet.setColumnWidth(3, 380);
+  sheet.setColumnWidth(1, 210); sheet.setColumnWidth(2, 340); sheet.setColumnWidth(3, 430);
+}
+
+// Tambahkan kunci pengaturan baru ke tab "Pengaturan" yang sudah ada (jalankan setelah update sistem).
+function sinkronkanPengaturan() {
+  const ss = _ss();
+  let sheet = ss.getSheetByName(CONFIG.PENGATURAN_SHEET);
+  if (!sheet) { sheet = ss.insertSheet(CONFIG.PENGATURAN_SHEET); _seedPengaturan(sheet); _settingsCache = null; return 'Tab Pengaturan dibuat dengan semua kunci.'; }
+  const s = _defaultSettings(), ket = _settingKeterangan(), ada = {};
+  const lastRow = sheet.getLastRow();
+  if (lastRow >= 2) sheet.getRange(2, 1, lastRow - 1, 1).getValues().forEach(r => { ada[String(r[0]).trim()] = true; });
+  let tambah = 0;
+  Object.keys(s).forEach(k => { if (!ada[k]) { sheet.appendRow([k, s[k], ket[k] || '']); tambah++; } });
+  _settingsCache = null;
+  return 'Sinkron pengaturan: ' + tambah + ' kunci baru ditambahkan.';
 }
 
 // ==================== ENTRY POINTS ====================
@@ -584,38 +626,81 @@ function getDashboard() {
 
 // ==================== REMINDER (Email + WhatsApp) ====================
 // Dipanggil oleh trigger waktu harian (lihat pasangTriggerReminder).
+// ---- Cadence helpers ----
+// "90:30,60:14,30:7,7:1" → [{th:90,iv:30},...] urut naik berdasarkan ambang.
+function _parseCadence(str) {
+  return String(str || '').split(',').map(p => {
+    const x = p.split(':');
+    return { th: parseInt(x[0], 10), iv: parseInt(x[1], 10) };
+  }).filter(z => !isNaN(z.th) && !isNaN(z.iv)).sort((a, b) => a.th - b.th);
+}
+// Interval (hari) pengingat untuk sisa tertentu. 0 = belum/tidak perlu diingatkan.
+function _intervalFor(sisa, zones, grace) {
+  if (sisa < 0) return sisa >= -grace ? 1 : 0;          // sudah habis → harian selama masa tenggang
+  for (let i = 0; i < zones.length; i++) { if (sisa <= zones[i].th) return zones[i].iv; }
+  return 0;                                              // masih di luar zona reminder terjauh
+}
+// Tanggal terakhir diingatkan dari sel (format baru 'yyyy-MM-dd'; toleran format lama).
+function _lastRemindDate(cell) {
+  const m = String(cell || '').match(/(\d{4})-(\d{2})-(\d{2})/);
+  return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+}
+// Peta kontak mitra: diindeks ID Mitra & nama (lowercase) → {pic, email, hp}.
+function _mitraContactMap() {
+  const { headers, rows } = _readAll(_mitraSheet());
+  const H = n => _colIndex(headers, n);
+  const map = {};
+  rows.forEach(r => {
+    const c = { pic: r[H('PIC Nama')], email: String(r[H('PIC Email')] || '').trim(), hp: String(r[H('PIC HP')] || '').trim() };
+    const id = String(r[H('ID Mitra')] || '').trim();
+    const nm = String(r[H('Nama Mitra')] || '').trim().toLowerCase();
+    if (id) map[id] = c;
+    if (nm) map['nama:' + nm] = c;
+  });
+  return map;
+}
+function _contactOf(map, item) {
+  return map[String(item.idMitra || '').trim()] || map['nama:' + String(item.nama || '').trim().toLowerCase()] || {};
+}
+// Kelompokkan item jatuh tempo per mitra (urutan mengikuti input = paling mendesak dulu).
+function _groupByMitra(due) {
+  const g = {}, order = [];
+  due.forEach(d => {
+    const key = String(d.idMitra || '').trim() || 'nama:' + String(d.nama || '').trim().toLowerCase();
+    if (!g[key]) { g[key] = { idMitra: d.idMitra, nama: d.nama, items: [] }; order.push(key); }
+    g[key].items.push(d);
+  });
+  return order.map(k => g[k]);
+}
+
 function cekDanKirimReminder(manual) {
   const s = _settings();
-  const ambang = String(s.REMINDER_HARI).split(',').map(x => parseInt(x.trim(), 10)).filter(n => !isNaN(n))
-    .sort((a, b) => a - b); // ascending: 0,7,30,60,90
+  const zones = _parseCadence(s.REMINDER_CADENCE);
+  const grace = parseInt(s.GRACE_HABIS_HARI, 10) || 0;
   const sheet = _kerjasamaSheet();
   const { headers, rows } = _readAll(sheet);
   const H = n => _colIndex(headers, n);
   const colSisa = H('Sisa Hari') + 1, colStatus = H('Status') + 1, colRem = H('Reminder Terakhir') + 1;
+  const today = _today();
 
-  const jatuhTempo = [];
+  const due = [];
   rows.forEach((r, i) => {
     const rowNo = i + 2;
-    const bDate = r[H('Tanggal Berakhir')] instanceof Date ? r[H('Tanggal Berakhir')] : _parseDate(r[H('Tanggal Berakhir')]);
+    const bRaw = r[H('Tanggal Berakhir')];
+    const bDate = bRaw instanceof Date ? bRaw : _parseDate(bRaw);
     if (!bDate) return;
     const { status, sisa } = _hitungStatus(bDate);
-    // Refresh status & sisa di sheet (sekalian)
+    // Segarkan status & sisa di sheet untuk SEMUA baris (sekalian).
     sheet.getRange(rowNo, colSisa).setValue(sisa);
     sheet.getRange(rowNo, colStatus).setValue(status);
 
-    // Tentukan tahap pengingat (idempoten: 1x per tahap)
-    let tag = null;
-    if (sisa < 0) {
-      if (sisa >= -7) tag = 'HABIS';   // baru habis (≤7 hari lalu) → ingatkan sekali
-    } else {
-      for (let a = 0; a < ambang.length; a++) { if (sisa <= ambang[a]) { tag = 'H-' + ambang[a]; break; } }
-    }
-    if (!tag) return;
-    const last = String(r[colRem - 1] || '').split(' ')[0];
-    if (last === tag) return; // tahap ini sudah dikirim → jangan dobel
+    const iv = _intervalFor(sisa, zones, grace);
+    if (!iv) return;                                     // di luar rentang pengingat
+    const last = _lastRemindDate(r[colRem - 1]);
+    if (last && Math.round((today - last) / 86400000) < iv) return; // belum waktunya diingatkan lagi
 
-    jatuhTempo.push({
-      rowNo, tag, sisa, status,
+    due.push({
+      rowNo, sisa, status, idMitra: String(r[H('ID Mitra')] || '').trim(),
       nama: r[H('Nama Mitra')], jenis: r[H('Jenis Mitra')], bentuk: r[H('Bentuk Kerja Sama')],
       nomor: r[H('Nomor Surat')], pengguna: r[H('Pengguna MoU/PKS')],
       berakhir: _fmt(bDate), file: r[H('Link File MoU/PKS')], ruang: r[H('Ruang Lingkup')],
@@ -623,90 +708,171 @@ function cekDanKirimReminder(manual) {
   });
 
   SpreadsheetApp.flush();
-  if (jatuhTempo.length === 0) return { status: 'success', terkirim: 0, pesan: 'Tidak ada kerjasama jatuh tempo hari ini' };
+  if (!due.length) return { status: 'success', terkirim: 0, pesan: 'Tidak ada yang perlu diingatkan hari ini' };
+  due.sort((a, b) => a.sisa - b.sisa);                   // paling mendesak (sisa terkecil) di atas
 
-  jatuhTempo.sort((a, b) => a.sisa - b.sisa);
-  let emailOk = false, waOk = false;
-  if (s.EMAIL_AKTIF) emailOk = _kirimEmailReminder(jatuhTempo, s);
-  if (s.WA_AKTIF)    waOk = _kirimWaReminder(jatuhTempo, s);
+  // --- INTERNAL: rekap semua ---
+  let emailInt = false, waInt = false;
+  if (s.EMAIL_AKTIF) emailInt = _kirimEmailInternal(due, s);
+  if (s.WA_NOMOR_AKTIF || s.WA_GRUP_AKTIF) waInt = _kirimWaInternal(due, s);
 
-  // tandai reminder terakhir
-  const stamp = Utilities.formatDate(new Date(), 'GMT+7', 'yyyy-MM-dd');
-  jatuhTempo.forEach(j => sheet.getRange(j.rowNo, colRem).setValue(j.tag + ' (' + stamp + ')'));
+  // --- EKSTERNAL: per mitra (hanya kerja samanya) ---
+  let emailEks = 0, waEks = 0;
+  if (s.EMAIL_EKSTERNAL_AKTIF || s.WA_EKSTERNAL_AKTIF) {
+    const map = _mitraContactMap();
+    const byMitra = _groupByMitra(due);
+    if (s.EMAIL_EKSTERNAL_AKTIF) {
+      byMitra.forEach(g => {
+        const c = _contactOf(map, g.items[0]);
+        if (c.email && _kirimEmailMitra(g, c, s)) emailEks++;
+      });
+    }
+    if (s.WA_EKSTERNAL_AKTIF) waEks = _kirimWaEksternal(byMitra, map, s);
+  }
+
+  // Tandai "terakhir diingatkan = hari ini" untuk baris yang benar-benar diproses.
+  const stamp = Utilities.formatDate(today, 'GMT+7', 'yyyy-MM-dd');
+  due.forEach(d => sheet.getRange(d.rowNo, colRem).setValue(stamp));
   SpreadsheetApp.flush();
 
-  return { status: 'success', terkirim: jatuhTempo.length, email: emailOk, wa: waOk, manual: !!manual };
+  return {
+    status: 'success', terkirim: due.length,
+    emailInternal: emailInt, waInternal: waInt, emailEksternal: emailEks, waEksternal: waEks,
+    manual: !!manual,
+  };
 }
 
-function _kirimEmailReminder(items, s) {
+// ---------- EMAIL INTERNAL (rekap semua) ----------
+function _kirimEmailInternal(items, s) {
   const to = String(s.EMAIL_NOTIF).split(',').map(x => x.trim()).filter(Boolean);
   if (!to.length) return false;
   const subjek = '[Monitoring Kerja Sama] ' + items.length + ' kerja sama perlu perhatian — ' +
     Utilities.formatDate(new Date(), 'GMT+7', 'dd MMM yyyy');
-
-  let rowsHtml = '';
-  items.forEach((j, i) => {
-    const warna = j.sisa <= 0 ? '#dc2626' : j.sisa <= 7 ? '#ea580c' : j.sisa <= 30 ? '#d97706' : '#4f46e5';
-    const ket = j.sisa < 0 ? 'SUDAH HABIS (' + Math.abs(j.sisa) + ' hr lalu)'
-      : j.sisa === 0 ? 'BERAKHIR HARI INI' : 'sisa ' + j.sisa + ' hari';
-    rowsHtml += '<tr>' +
-      '<td style="padding:8px;border-bottom:1px solid #eee">' + (i + 1) + '</td>' +
-      '<td style="padding:8px;border-bottom:1px solid #eee"><b>' + _esc(j.nama) + '</b><br><span style="color:#666;font-size:12px">' + _esc(j.jenis) + '</span></td>' +
-      '<td style="padding:8px;border-bottom:1px solid #eee">' + _esc(j.bentuk) + '<br><span style="color:#666;font-size:12px">' + _esc(j.nomor) + '</span></td>' +
-      '<td style="padding:8px;border-bottom:1px solid #eee">' + _esc(j.pengguna) + '</td>' +
-      '<td style="padding:8px;border-bottom:1px solid #eee;text-align:center">' + j.berakhir + '</td>' +
-      '<td style="padding:8px;border-bottom:1px solid #eee;text-align:center;color:' + warna + ';font-weight:bold">' + ket + '</td>' +
-      '<td style="padding:8px;border-bottom:1px solid #eee;text-align:center">' + (j.file && j.file.indexOf('http') === 0 ? '<a href="' + j.file + '">Lihat</a>' : '-') + '</td>' +
-      '</tr>';
-  });
-
-  const html =
-    '<div style="font-family:Arial,sans-serif;max-width:760px;margin:auto">' +
-    '<div style="background:#4f46e5;color:#fff;padding:16px 20px;border-radius:8px 8px 0 0">' +
-    '<h2 style="margin:0">Monitoring Masa Berlaku Kerja Sama</h2>' +
-    '<div style="opacity:.9;font-size:13px">' + _esc(s.NAMA_INSTANSI) + '</div></div>' +
-    '<div style="border:1px solid #e5e7eb;border-top:none;padding:20px;border-radius:0 0 8px 8px">' +
+  const html = _emailShell(s,
     '<p>Berikut daftar kerja sama yang <b>akan/segera berakhir</b> dan perlu ditindaklanjuti ' +
-    '(konfirmasi ke mitra & proses perpanjangan):</p>' +
-    '<table style="border-collapse:collapse;width:100%;font-size:13px">' +
-    '<thead><tr style="background:#f1f5f9;text-align:left">' +
-    '<th style="padding:8px">#</th><th style="padding:8px">Mitra</th><th style="padding:8px">Bentuk / No. Surat</th>' +
-    '<th style="padding:8px">Pengguna</th><th style="padding:8px">Berakhir</th><th style="padding:8px">Status</th><th style="padding:8px">Berkas</th>' +
-    '</tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
-    '<p style="margin-top:18px"><a href="' + s.BASE_URL + '" style="background:#4f46e5;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none">Buka Dashboard</a></p>' +
-    '<p style="color:#94a3b8;font-size:12px;margin-top:16px">Email otomatis dari Sistem Monitoring Kerja Sama. Mohon tidak membalas email ini.</p>' +
-    '</div></div>';
-
-  // Lampiran file MoU/PKS (bila diaktifkan)
-  const attachments = [];
-  if (s.LAMPIRKAN_FILE) {
-    items.forEach(j => {
-      const fid = _driveId(j.file);
-      if (!fid) return;
-      try { attachments.push(DriveApp.getFileById(fid).getBlob()); } catch (e) { /* skip */ }
-    });
-  }
+    '(konfirmasi ke mitra & proses perpanjangan):</p>' + _tabelItems(items, true));
+  const attachments = _lampiran(items, s);
   try {
     MailApp.sendEmail({ to: to.join(','), subject: subjek, htmlBody: html,
-      attachments: attachments.length ? attachments.slice(0, 20) : undefined, noReply: true });
+      attachments: attachments.length ? attachments : undefined, noReply: true });
     return true;
   } catch (e) { return false; }
 }
 
-function _kirimWaReminder(items, s) {
-  const targets = String(s.WA_TARGET).split(',').map(x => x.trim()).filter(Boolean);
-  if (!targets.length || !CONFIG.WA_TOKEN || CONFIG.WA_TOKEN.indexOf('GANTI') === 0) return false;
-  let pesan = '*Monitoring Kerja Sama — ' + s.NAMA_INSTANSI + '*\n' +
-    items.length + ' kerja sama perlu perhatian:\n\n';
-  items.slice(0, 30).forEach((j, i) => {
-    const ket = j.sisa < 0 ? 'SUDAH HABIS (' + Math.abs(j.sisa) + ' hr lalu)'
-      : j.sisa === 0 ? 'BERAKHIR HARI INI' : 'sisa ' + j.sisa + ' hari';
-    pesan += (i + 1) + '. ' + j.nama + ' (' + j.bentuk + ')\n   Berakhir ' + j.berakhir + ' — ' + ket + '\n';
-  });
-  pesan += '\nBuka dashboard: ' + s.BASE_URL;
+// ---------- EMAIL EKSTERNAL (per mitra, hanya kerja samanya) ----------
+function _kirimEmailMitra(group, contact, s) {
+  const to = String(contact.email).split(',').map(x => x.trim()).filter(Boolean);
+  if (!to.length) return false;
+  const sapaan = contact.pic ? 'Yth. ' + _esc(contact.pic) : 'Yth. Bapak/Ibu Mitra';
+  const n = group.items.length;
+  const subjek = '[' + s.NAMA_INSTANSI + '] Pengingat masa berlaku kerja sama — ' + group.nama;
+  const html = _emailShell(s,
+    '<p>' + sapaan + ',</p>' +
+    '<p>Menindaklanjuti kerja sama antara <b>' + _esc(group.nama) + '</b> dengan <b>' + _esc(s.NAMA_INSTANSI) +
+    '</b>, berikut ' + n + ' dokumen kerja sama yang <b>akan/segera berakhir</b>. ' +
+    'Mohon konfirmasi rencana perpanjangan atau tindak lanjutnya:</p>' +
+    _tabelItems(group.items, false) +
+    '<p style="margin-top:14px">Atas perhatian dan kerja samanya, kami ucapkan terima kasih.</p>');
+  const attachments = s.LAMPIRKAN_FILE ? _lampiran(group.items, s) : [];
+  try {
+    MailApp.sendEmail({ to: to.join(','), subject: subjek, htmlBody: html,
+      attachments: attachments.length ? attachments : undefined, noReply: true });
+    return true;
+  } catch (e) { return false; }
+}
+
+// ---------- WA INTERNAL (rekap ke nomor &/ grup) ----------
+function _kirimWaInternal(items, s) {
+  if (!CONFIG.WA_TOKEN || CONFIG.WA_TOKEN.indexOf('GANTI') === 0) return false;
+  const pesan = _waPesanRekap(items, s);
   let ok = false;
-  targets.forEach(t => { if (_kirimWA(t, pesan)) ok = true; });
+  if (s.WA_NOMOR_AKTIF) {
+    String(s.WA_TARGET).split(',').map(x => x.trim()).filter(Boolean)
+      .forEach(t => { if (_kirimWA(t, pesan)) ok = true; });
+  }
+  if (s.WA_GRUP_AKTIF && String(s.WA_GRUP_ID).trim()) {
+    if (_kirimWA(String(s.WA_GRUP_ID).trim(), pesan)) ok = true;
+  }
   return ok;
+}
+
+// ---------- WA EKSTERNAL (ke PIC mitra) — dibatasi & di-throttle anti-blokir ----------
+function _kirimWaEksternal(byMitra, map, s) {
+  if (!CONFIG.WA_TOKEN || CONFIG.WA_TOKEN.indexOf('GANTI') === 0) return 0;
+  const maks = Math.max(0, parseInt(s.WA_EKSTERNAL_MAKS_PER_HARI, 10) || 0);
+  const jeda = Math.max(0, parseInt(s.WA_EKSTERNAL_JEDA_DETIK, 10) || 0);
+  let terkirim = 0;
+  for (let i = 0; i < byMitra.length && terkirim < maks; i++) {
+    const g = byMitra[i];
+    const c = _contactOf(map, g.items[0]);
+    const hp = String(c.hp || '').trim();
+    if (!hp) continue;
+    if (terkirim > 0 && jeda) Utilities.sleep(jeda * 1000);   // jeda anti-burst
+    if (_kirimWA(hp, _waPesanMitra(g, c, s))) terkirim++;
+  }
+  return terkirim;                                            // sisanya (di atas batas) menyusul hari berikutnya
+}
+
+// ---------- Util pesan & email ----------
+function _ketSisa(sisa) {
+  return sisa < 0 ? 'SUDAH HABIS (' + Math.abs(sisa) + ' hr lalu)'
+    : sisa === 0 ? 'BERAKHIR HARI INI' : 'sisa ' + sisa + ' hari';
+}
+function _emailShell(s, isi) {
+  return '<div style="font-family:Arial,sans-serif;max-width:760px;margin:auto">' +
+    '<div style="background:#4f46e5;color:#fff;padding:16px 20px;border-radius:8px 8px 0 0">' +
+    '<h2 style="margin:0">Monitoring Masa Berlaku Kerja Sama</h2>' +
+    '<div style="opacity:.9;font-size:13px">' + _esc(s.NAMA_INSTANSI) + '</div></div>' +
+    '<div style="border:1px solid #e5e7eb;border-top:none;padding:20px;border-radius:0 0 8px 8px">' + isi +
+    '<p style="margin-top:18px"><a href="' + s.BASE_URL + '" style="background:#4f46e5;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none">Buka Dashboard</a></p>' +
+    '<p style="color:#94a3b8;font-size:12px;margin-top:16px">Email otomatis dari Sistem Monitoring Kerja Sama. Mohon tidak membalas email ini.</p>' +
+    '</div></div>';
+}
+function _tabelItems(items, withPengguna) {
+  let rows = '';
+  items.forEach((j, i) => {
+    const warna = j.sisa <= 0 ? '#dc2626' : j.sisa <= 7 ? '#ea580c' : j.sisa <= 30 ? '#d97706' : '#4f46e5';
+    rows += '<tr>' +
+      '<td style="padding:8px;border-bottom:1px solid #eee">' + (i + 1) + '</td>' +
+      '<td style="padding:8px;border-bottom:1px solid #eee"><b>' + _esc(j.nama) + '</b><br><span style="color:#666;font-size:12px">' + _esc(j.jenis) + '</span></td>' +
+      '<td style="padding:8px;border-bottom:1px solid #eee">' + _esc(j.bentuk) + '<br><span style="color:#666;font-size:12px">' + _esc(j.nomor) + '</span></td>' +
+      (withPengguna ? '<td style="padding:8px;border-bottom:1px solid #eee">' + _esc(j.pengguna) + '</td>' : '') +
+      '<td style="padding:8px;border-bottom:1px solid #eee;text-align:center">' + j.berakhir + '</td>' +
+      '<td style="padding:8px;border-bottom:1px solid #eee;text-align:center;color:' + warna + ';font-weight:bold">' + _ketSisa(j.sisa) + '</td>' +
+      '<td style="padding:8px;border-bottom:1px solid #eee;text-align:center">' + (j.file && String(j.file).indexOf('http') === 0 ? '<a href="' + j.file + '">Lihat</a>' : '-') + '</td>' +
+      '</tr>';
+  });
+  return '<table style="border-collapse:collapse;width:100%;font-size:13px">' +
+    '<thead><tr style="background:#f1f5f9;text-align:left">' +
+    '<th style="padding:8px">#</th><th style="padding:8px">Mitra</th><th style="padding:8px">Bentuk / No. Surat</th>' +
+    (withPengguna ? '<th style="padding:8px">Pengguna</th>' : '') +
+    '<th style="padding:8px">Berakhir</th><th style="padding:8px">Status</th><th style="padding:8px">Berkas</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table>';
+}
+function _lampiran(items, s) {
+  if (!s.LAMPIRKAN_FILE) return [];
+  const out = [];
+  items.forEach(j => {
+    const fid = _driveId(j.file);
+    if (!fid) return;
+    try { out.push(DriveApp.getFileById(fid).getBlob()); } catch (e) { /* skip */ }
+  });
+  return out.slice(0, 20);
+}
+function _waPesanRekap(items, s) {
+  let p = '*Monitoring Kerja Sama — ' + s.NAMA_INSTANSI + '*\n' + items.length + ' kerja sama perlu perhatian:\n\n';
+  items.slice(0, 30).forEach((j, i) => {
+    p += (i + 1) + '. ' + j.nama + ' (' + j.bentuk + ')\n   Berakhir ' + j.berakhir + ' — ' + _ketSisa(j.sisa) + '\n';
+  });
+  return p + '\nBuka dashboard: ' + s.BASE_URL;
+}
+function _waPesanMitra(g, c, s) {
+  let p = (c.pic ? 'Yth. ' + c.pic : 'Yth. Bapak/Ibu') + ',\n\n' +
+    'Pengingat dari *' + s.NAMA_INSTANSI + '* untuk kerja sama *' + g.nama + '* yang akan/segera berakhir:\n\n';
+  g.items.slice(0, 20).forEach((j, i) => {
+    p += (i + 1) + '. ' + j.bentuk + (j.nomor ? ' (' + j.nomor + ')' : '') + '\n   Berakhir ' + j.berakhir + ' — ' + _ketSisa(j.sisa) + '\n';
+  });
+  return p + '\nMohon konfirmasi rencana perpanjangan/tindak lanjutnya. Terima kasih.';
 }
 
 function _kirimWA(target, pesan) {

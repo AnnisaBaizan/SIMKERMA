@@ -44,9 +44,9 @@ Pola arsitektur sama dengan project **SimpelBMN** & **Jum'at Bersih**:
 
 - Data di **1 Spreadsheet, 4 tab**: `Mitra` (master) · `Kerjasama` (transaksi/historis) · `Dataset` (dropdown dinamis) · `Pengaturan` (key-value).
 - Upload berkas MoU/PKS → **Google Drive**, tautannya tercatat di baris.
-- **Reminder otomatis harian (07:00 WIB)**: Email (+ opsional WhatsApp via Fonnte) pada ambang **H-90/60/30/7/0** dan sekali saat **baru habis** (≤7 hari). Satu **email digest** + **lampiran berkas**; **anti-spam** (sekali per tahap).
+- **Reminder otomatis harian (07:00 WIB)** dengan **cadence bertingkat** — makin dekat jatuh tempo makin sering (mis. ≤90 hari tiap 30h, ≤60 tiap 14h, ≤30 tiap 7h, ≤7 **harian**), lalu harian selama masa tenggang setelah berakhir. Dikirim ke **2 pihak**: rekap **internal** (Email + WhatsApp: nomor &/atau grup) dan **eksternal per mitra** (Email + opsional WhatsApp ke PIC, dengan **batas/throttle anti-blokir**). Satu **email digest** internal + **lampiran berkas**.
 - **Gerbang kata sandi** untuk operasi tulis, **diverifikasi server-side**.
-- Utilitas: `setupAwal`, `migrasiDataLama` (aman dari dobel), `refreshSemuaStatus`, `pasangTriggerReminder`.
+- Utilitas: `setupAwal`, `sinkronkanPengaturan`, `migrasiDataLama` (aman dari dobel), `refreshSemuaStatus`, `pasangTriggerReminder`.
 
 **Dashboard (`index.html`)**
 
@@ -280,18 +280,36 @@ Ringkasan + panel "Perlu Tindak Lanjut" + 2 kolom grafik ber-tab + tabel mitra t
 
 ## 8. Tab Pengaturan (key-value)
 
-| Kunci            | Default                                 | Keterangan                                                  |
-| ---------------- | --------------------------------------- | ----------------------------------------------------------- |
-| `NAMA_INSTANSI`  | Politeknik Kesehatan Kemenkes Palembang | Nama di notifikasi                                          |
-| `EMAIL_NOTIF`    | lukman@, kerjasama@, okta@ …ac.id       | Penerima reminder (pisah koma)                              |
-| `BASE_URL`       | https://simkerma.vercel.app             | Domain aplikasi (tautan di email)                           |
-| `REMINDER_HARI`  | `90,60,30,7,0`                          | Ambang H- (hari).`0` = hari berakhir                        |
-| `EMAIL_AKTIF`    | TRUE                                    | Aktifkan email                                              |
-| `WA_AKTIF`       | FALSE                                   | Aktifkan WhatsApp (butuh`WA_TOKEN` di CONFIG + `WA_TARGET`) |
-| `WA_TARGET`      | _(kosong)_                              | Nomor WA tujuan (mis.`62812xxxx`), pisah koma               |
-| `LAMPIRKAN_FILE` | TRUE                                    | Lampirkan berkas MoU/PKS pada email                         |
+**Internal (tim Poltekkes) — rekap semua yang jatuh tempo:**
+
+| Kunci              | Default                       | Keterangan                                                     |
+| ------------------ | ----------------------------- | -------------------------------------------------------------- |
+| `NAMA_INSTANSI`    | Politeknik Kesehatan …        | Nama di notifikasi                                             |
+| `EMAIL_NOTIF`      | kerjasama@…ac.id              | Email tim penerima rekap (pisah koma)                          |
+| `BASE_URL`         | https://simkerma.vercel.app   | Domain aplikasi (tautan di email)                             |
+| `REMINDER_CADENCE` | `90:30,60:14,30:7,7:1`        | **Jadwal berulang** `sisa:interval` (hari). Makin dekat makin sering |
+| `GRACE_HABIS_HARI` | `14`                          | Setelah berakhir, tetap ingatkan harian s.d. N hari lalu berhenti |
+| `EMAIL_AKTIF`      | TRUE                          | Aktifkan email rekap internal                                 |
+| `WA_NOMOR_AKTIF`   | FALSE                         | WA rekap ke **nomor** perorangan tim (`WA_TARGET`)            |
+| `WA_TARGET`        | _(kosong)_                    | Nomor WA tim (mis. `62812xxxx`), pisah koma                    |
+| `WA_GRUP_AKTIF`    | FALSE                         | WA rekap ke **grup** (`WA_GRUP_ID`) — hemat kuota Fonnte       |
+| `WA_GRUP_ID`       | _(kosong)_                    | ID grup WhatsApp (Fonnte)                                      |
+| `LAMPIRKAN_FILE`   | TRUE                          | Lampirkan berkas MoU/PKS pada email                           |
+
+`WA_NOMOR_AKTIF` & `WA_GRUP_AKTIF` **independen** — bisa dua-duanya aktif (mis. kirim ke grup **dan** ke orang yang tak ada di grup).
+
+**Eksternal (ke PIC mitra) — default MATI, hanya kerja sama milik mitra ybs:**
+
+| Kunci                        | Default | Keterangan                                                          |
+| ---------------------------- | ------- | ------------------------------------------------------------------- |
+| `EMAIL_EKSTERNAL_AKTIF`      | FALSE   | Email ke `PIC Email` mitra (aman untuk dinyalakan)                  |
+| `WA_EKSTERNAL_AKTIF`         | FALSE   | ⚠️ WA ke `PIC HP` mitra. **Risiko nomor Fonnte diblokir** bila banyak |
+| `WA_EKSTERNAL_MAKS_PER_HARI` | `8`     | Batas WA eksternal/hari (anti-blokir); sisanya digeser ke hari berikutnya |
+| `WA_EKSTERNAL_JEDA_DETIK`    | `8`     | Jeda antar-kirim WA eksternal (detik), anti-burst                   |
 
 Rahasia (`ADMIN_PASSWORD`, `WA_TOKEN`) tetap di `CONFIG` Code.gs, **bukan** di Pengaturan/Sheet.
+
+> Setelah meng-update sistem, jalankan **`sinkronkanPengaturan`** sekali dari editor untuk menambahkan kunci-kunci baru ke tab Pengaturan yang sudah ada.
 
 ---
 
@@ -314,8 +332,8 @@ Rahasia (`ADMIN_PASSWORD`, `WA_TOKEN`) tetap di `CONFIG` Code.gs, **bukan** di P
 
 Respons gagal-otentikasi: `{ status:'error', auth:true }` → frontend meminta sandi ulang.
 
-**Fungsi editor (jalankan manual dari Apps Script):** `setupAwal`, `pasangTriggerReminder`,
-`migrasiDataLama(force?)`, `refreshSemuaStatus`, `cekDanKirimReminder`.
+**Fungsi editor (jalankan manual dari Apps Script):** `setupAwal`, `sinkronkanPengaturan`,
+`pasangTriggerReminder`, `migrasiDataLama(force?)`, `refreshSemuaStatus`, `cekDanKirimReminder`.
 
 ---
 
@@ -370,9 +388,14 @@ Tanpa `npm install` untuk runtime — hanya modul bawaan Node untuk `build.js`. 
   deploy `Code.gs` dari akun tersebut.
 - **Zona waktu:** pastikan Apps Script **Asia/Jakarta** (`appsscript.json` + Project Settings) agar
   perhitungan "sisa hari" pada WIB tidak meleset.
-- **Kuota email:** MailApp ±100/hari (akun biasa). Reminder dikirim sebagai **satu digest**, hemat kuota.
-- **Reminder idempoten:** tiap dokumen dikirim **sekali per tahap** (H-90/60/30/7/0 + sekali "baru habis").
-  Kolom `Reminder Terakhir` mencatat tahap terakhir.
+- **Kuota email:** MailApp ±100/hari (akun biasa). Rekap internal dikirim sebagai **satu digest** (hemat);
+  email eksternal 1 per mitra jatuh tempo — perhatikan kuota bila banyak mitra.
+- **Kuota & keamanan WhatsApp (Fonnte):** paket ±1000 pesan/tahun. Kirim ke **grup** jauh lebih hemat
+  (1 pesan vs per-nomor). WA **eksternal** dibatasi `WA_EKSTERNAL_MAKS_PER_HARI` + jeda `WA_EKSTERNAL_JEDA_DETIK`
+  detik antar-kirim agar **nomor pengirim tidak diblokir**; kelebihan di atas batas otomatis menyusul hari berikutnya.
+- **Cadence reminder:** `Reminder Terakhir` kini menyimpan **tanggal** terakhir diingatkan. Tiap pagi sistem
+  cek `hari_ini − terakhir ≥ interval_zona` (dari `REMINDER_CADENCE`) → jadi frekuensi meningkat otomatis
+  saat mendekati/melewati jatuh tempo, bukan sekali per ambang.
 - **Endpoint Web App "Anyone":** agar form bisa mengirim tanpa login Google. Penulisan sudah dilindungi
   gerbang sandi server-side; alternatif lebih ketat: akses Web App "Anyone with a Google account".
 - **State tabel** disimpan di localStorage (kunci `simkerma_data_state_v2`); mengubah struktur kolom
