@@ -34,6 +34,12 @@
           <select id="mitraSelect" onchange="prefillMitra()">
             <option value="">— pilih mitra —</option>
           </select>
+          <label style="margin-top:10px">Kerja Sama yang Diperpanjang <span class="req">*</span></label>
+          <select id="refKerjasama">
+            <option value="">— pilih mitra dulu —</option>
+          </select>
+          <div class="hint" id="refHint">Kerja sama lama yang diperpanjang oleh dokumen ini. Setelah disimpan, yang lama
+            otomatis ditandai <b>Diperpanjang</b> dan pengingatnya berhenti.</div>
           <div class="readonly-note">Saat perpanjangan: <b>Nama & Jenis Mitra tetap</b>. Isi ulang nomor surat, bentuk,
             biaya, masa berlaku, dan tanggal sesuai dokumen baru.</div>
         </div>
@@ -142,6 +148,16 @@
 
           <label>Catatan</label>
           <textarea id="catatan" rows="2" placeholder="Info tambahan (mis. status negosiasi)…"></textarea>
+
+          <label style="margin-top:10px">Tindak Lanjut <span class="hint">(kosong = terus diingatkan)</span></label>
+          <select id="tindakLanjut">
+            <option value="">— belum ada / terus ingatkan —</option>
+            <option value="Sedang Diproses">Sedang Diproses (tetap diingatkan)</option>
+            <option value="Diperpanjang">Diperpanjang (stop)</option>
+            <option value="Tidak Diperpanjang">Tidak Diperpanjang (stop)</option>
+            <option value="Selesai / Arsip">Selesai / Arsip (stop)</option>
+          </select>
+          <div class="hint">Pilih <b>Tidak Diperpanjang</b> bila kerja sama ini memang tak dilanjutkan → pengingat berhenti.</div>
         </div>
 
         <button type="submit" class="btn primary block" id="submitBtn" disabled><i

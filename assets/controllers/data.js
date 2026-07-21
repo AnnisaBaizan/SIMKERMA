@@ -27,7 +27,12 @@
     namaMitra: k => '<span style="font-weight:600">' + ell(k.namaMitra) + '</span>',
     jenisMitra: k => ell(k.jenisMitra), bentuk: k => ell(k.bentuk), nomorSurat: k => esc(k.nomorSurat),
     pengguna: k => ell(k.pengguna), wilayah: k => ell(k.wilayah), mulai: k => esc(k.mulai),
-    berakhir: k => esc(k.berakhir), sisa: k => ui.sisa(k.sisa), biaya: k => money(k.biaya), status: k => ui.badge(k.status)
+    berakhir: k => esc(k.berakhir), sisa: k => ui.sisa(k.sisa), biaya: k => money(k.biaya), status: k => ui.badge(k.status),
+    tindakLanjut: k => {
+      const v = String(k.tindakLanjut || '').trim(); if (!v) return '<span class="muted">—</span>';
+      const stop = /^(diperpanjang|tidak diperpanjang|selesai)/i.test(v);
+      return '<span class="badge ' + (stop ? 'b-gray' : 'b-amber') + '">' + esc(v) + '</span>';
+    }
   };
   function isAdmin() { return document.body.classList.contains('admin'); }
 
@@ -88,7 +93,8 @@
     { k: 'wilayah', l: 'Wilayah' }, { k: 'biaya', l: 'Biaya', f: v => v ? SIMKERMA.rupiah(v) : '-' },
     { k: 'ruangLingkup', l: 'Ruang Lingkup' }, { k: 'jabatan', l: 'Jabatan Penandatangan' },
     { k: 'masaBerlaku', l: 'Masa Berlaku', f: v => v ? v + ' tahun' : '-' }, { k: 'jenisEntri', l: 'Jenis Entri' },
-    { k: 'dokumenInduk', l: 'Dokumen Induk' }, { k: 'refSebelumnya', l: 'Ref Sebelumnya' }, { k: 'catatan', l: 'Catatan' }
+    { k: 'dokumenInduk', l: 'Dokumen Induk' }, { k: 'refSebelumnya', l: 'Ref Sebelumnya' },
+    { k: 'tindakLanjut', l: 'Tindak Lanjut', f: v => v || '—' }, { k: 'catatan', l: 'Catatan' }
   ];
   function detailRowHtml(k, totalCols) {
     const cells = DETAIL.filter(d => { const col = M.colOf(d.k); return !(col && !M.hidden.has(d.k)); })

@@ -70,8 +70,16 @@ const HEADERS_KERJASAMA = [
   'Nomor Surat', 'Bentuk Kerja Sama', 'Ruang Lingkup', 'Pengguna MoU/PKS', 'Jabatan Penandatangan',
   'Biaya (Rp)', 'Masa Berlaku (tahun)', 'Tanggal Mulai', 'Tanggal Berakhir',
   'Jenis Entri', 'Ref Kerjasama Sebelumnya', 'Dokumen Induk (MoU)', 'Link File MoU/PKS', 'Catatan',
+  'Tindak Lanjut',
   'Status', 'Sisa Hari', 'Diinput Oleh', 'Reminder Terakhir',
 ];
+
+// Nilai "Tindak Lanjut" yang MENGHENTIKAN pengingat (kosong / "Sedang Diproses" → tetap dinotif).
+function _tlClosed(tl) {
+  var v = String(tl == null ? '' : tl).trim().toLowerCase();
+  return v === 'diperpanjang' || v === 'tidak diperpanjang' ||
+         v === 'selesai / arsip' || v === 'selesai/arsip' || v === 'selesai' || v === 'arsip';
+}
 
 const HEADERS_DATASET = ['Kategori', 'Nilai'];
 
@@ -387,11 +395,12 @@ function handleSubmit(d) {
 
     const { status, sisa } = _hitungStatus(berakhir);
     const sheet = _kerjasamaSheet();
-    const buildRow = (id, ts, fileVal, reminderVal, emailVal) => ([
+    const buildRow = (id, ts, fileVal, reminderVal, emailVal, tindakVal) => ([
       id, ts, idMitra, String(d.namaMitra).trim(), d.jenisMitra || '', d.wilayah || '',
       d.nomorSurat || '', d.bentuk || '', d.ruangLingkup || '', d.pengguna || '', d.jabatan || '',
       Number(d.biaya) || 0, masa, mulai, berakhir,
       d.jenisEntri || 'Baru', d.refSebelumnya || '', d.dokumenInduk || '', fileVal, d.catatan || '',
+      tindakVal || '',
       status, sisa, emailVal, reminderVal,
     ]);
 
@@ -404,8 +413,10 @@ function handleSubmit(d) {
       const fileVal = (d.file && d.file.data) ? fileUrl : old[H('Link File MoU/PKS')];
       const ts = old[H('Timestamp')] || new Date();
       const emailVal = old[H('Diinput Oleh')] || d.email || '';
-      // Reminder direset ('') karena syarat/tanggal mungkin berubah → tahap pengingat dihitung ulang
-      sheet.getRange(found.rowIndex, 1, 1, HEADERS_KERJASAMA.length).setValues([buildRow(d.editId, ts, fileVal, '', emailVal)]);
+      // Tindak Lanjut: pakai kiriman form bila ada, jika tidak pertahankan nilai lama.
+      const tindakVal = (d.tindakLanjut !== undefined && d.tindakLanjut !== null) ? d.tindakLanjut : (old[H('Tindak Lanjut')] || '');
+      // Reminder direset ('') karena syarat/tanggal mungkin berubah → jadwal pengingat dihitung ulang
+      sheet.getRange(found.rowIndex, 1, 1, HEADERS_KERJASAMA.length).setValues([buildRow(d.editId, ts, fileVal, '', emailVal, tindakVal)]);
       _recountMitra();
       SpreadsheetApp.flush();
       return { status: 'success', id: d.editId, updated: true, tanggalBerakhir: berakhir ? Utilities.formatDate(berakhir, 'GMT+7', 'yyyy-MM-dd') : '' };
@@ -414,7 +425,9 @@ function handleSubmit(d) {
     // ── Mode CREATE ──
     const id = 'K' + Utilities.formatDate(new Date(), 'GMT+7', 'yyyyMMddHHmmss') +
       Math.floor(Math.random() * 90 + 10);
-    sheet.appendRow(buildRow(id, new Date(), fileUrl, '', d.email || ''));
+    sheet.appendRow(buildRow(id, new Date(), fileUrl, '', d.email || '', d.tindakLanjut || ''));
+    // Perpanjangan → otomatis tandai kerja sama lama "Diperpanjang" agar pengingatnya berhenti.
+    if (String(d.jenisEntri) === 'Perpanjangan' && d.refSebelumnya) _tandaiDiperpanjang(d.refSebelumnya, id);
     _recountMitra();
     SpreadsheetApp.flush();
     return { status: 'success', id, idMitra, tanggalBerakhir: berakhir ? Utilities.formatDate(berakhir, 'GMT+7', 'yyyy-MM-dd') : '' };
@@ -431,6 +444,20 @@ function _findKerjasamaRow(id) {
     if (String(rows[i][0]).trim() === id) return { rowIndex: i + 2, data: rows[i] };
   }
   return null;
+}
+
+// Tandai kerja sama lama sebagai "Diperpanjang" (kecuali sudah ditutup manual) → pengingatnya berhenti.
+function _tandaiDiperpanjang(oldId, newId) {
+  const found = _findKerjasamaRow(oldId);
+  if (!found) return;
+  const col = HEADERS_KERJASAMA.indexOf('Tindak Lanjut') + 1;
+  const cur = String(found.data[col - 1] || '').trim();
+  if (_tlClosed(cur)) return;                 // jangan timpa keputusan manual (mis. "Tidak Diperpanjang")
+  const sheet = _kerjasamaSheet();
+  sheet.getRange(found.rowIndex, col).setValue('Diperpanjang');
+  const cCat = HEADERS_KERJASAMA.indexOf('Catatan') + 1;
+  const cat = String(found.data[cCat - 1] || '').trim();
+  sheet.getRange(found.rowIndex, cCat).setValue((cat ? cat + ' | ' : '') + 'Diperpanjang oleh ' + newId);
 }
 
 // Hapus satu kerja sama (admin, bergerbang sandi lewat doPost)
@@ -560,7 +587,7 @@ function _listKerjasama() {
       mulai: _fmt(r[H('Tanggal Mulai')]), berakhir: _fmt(bDate),
       jenisEntri: r[H('Jenis Entri')], file: r[H('Link File MoU/PKS')],
       dokumenInduk: r[H('Dokumen Induk (MoU)')], refSebelumnya: r[H('Ref Kerjasama Sebelumnya')],
-      catatan: r[H('Catatan')], status, sisa,
+      catatan: r[H('Catatan')], tindakLanjut: r[H('Tindak Lanjut')] || '', status, sisa,
     };
   });
 }
@@ -694,6 +721,7 @@ function diagReminder() {
   const { headers, rows } = _readAll(sheet);
   const H = n => _colIndex(headers, n);
   const colRem = H('Reminder Terakhir') + 1;
+  const colTl = H('Tindak Lanjut') + 1;
   const today = _today();
   const L = [];
   L.push('=== DIAGNOSTIK REMINDER (tidak mengirim) ===');
@@ -705,13 +733,14 @@ function diagReminder() {
   L.push('REMINDER_CADENCE="' + s.REMINDER_CADENCE + '" | GRACE_HABIS_HARI=' + grace);
   L.push('Total baris kerja sama: ' + rows.length);
 
-  let inWindow = 0, due = 0, suppressed = 0, noDate = 0;
+  let inWindow = 0, due = 0, suppressed = 0, noDate = 0, closed = 0;
   const contohDue = [], contohSuppressed = [];
   rows.forEach((r, i) => {
     const bRaw = r[H('Tanggal Berakhir')];
     const bDate = bRaw instanceof Date ? bRaw : _parseDate(bRaw);
     if (!bDate) { noDate++; return; }
     const { sisa } = _hitungStatus(bDate);
+    if (colTl > 0 && _tlClosed(r[colTl - 1])) { closed++; return; }  // ditutup Tindak Lanjut
     const iv = _intervalFor(sisa, zones, grace);
     if (!iv) return;                       // di luar jendela pengingat
     inWindow++;
@@ -729,6 +758,7 @@ function diagReminder() {
 
   L.push('--- Ringkasan ---');
   L.push('Tanpa tanggal berakhir: ' + noDate);
+  L.push('Ditutup Tindak Lanjut (stop): ' + closed);
   L.push('Masuk jendela pengingat: ' + inWindow);
   L.push('AKAN dikirim (due): ' + due);
   L.push('Ditahan cadence (belum waktunya): ' + suppressed);
@@ -749,6 +779,7 @@ function cekDanKirimReminder(manual) {
   const { headers, rows } = _readAll(sheet);
   const H = n => _colIndex(headers, n);
   const colSisa = H('Sisa Hari') + 1, colStatus = H('Status') + 1, colRem = H('Reminder Terakhir') + 1;
+  const colTl = H('Tindak Lanjut') + 1;
   const today = _today();
 
   const due = [];
@@ -762,6 +793,7 @@ function cekDanKirimReminder(manual) {
     sheet.getRange(rowNo, colSisa).setValue(sisa);
     sheet.getRange(rowNo, colStatus).setValue(status);
 
+    if (colTl > 0 && _tlClosed(r[colTl - 1])) return;    // sudah ditindaklanjuti → stop pengingat
     const iv = _intervalFor(sisa, zones, grace);
     if (!iv) return;                                     // di luar rentang pengingat
     const last = _lastRemindDate(r[colRem - 1]);
@@ -1075,6 +1107,7 @@ function migrasiDataLama(force) {
       r[3] || '', r[2] || '', r[7] || '', r[8] || '', r[6] || '',
       Number(r[9]) || 0, masa, mulai, berakhir,
       'Baru', '', '', '', '',
+      '',
       status, sisa, r[1] || '', '',
     ]);
   }

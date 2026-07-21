@@ -30,6 +30,7 @@ HEADERS_KERJASAMA = ['ID Kerjasama', 'Timestamp', 'ID Mitra', 'Nama Mitra', 'Jen
                      'Nomor Surat', 'Bentuk Kerja Sama', 'Ruang Lingkup', 'Pengguna MoU/PKS', 'Jabatan Penandatangan',
                      'Biaya (Rp)', 'Masa Berlaku (tahun)', 'Tanggal Mulai', 'Tanggal Berakhir',
                      'Jenis Entri', 'Ref Kerjasama Sebelumnya', 'Dokumen Induk (MoU)', 'Link File MoU/PKS', 'Catatan',
+                     'Tindak Lanjut',
                      'Status', 'Sisa Hari', 'Diinput Oleh', 'Reminder Terakhir']
 
 # Pengaturan — HARUS sinkron dengan _defaultSettings()/_settingKeterangan() di Code.gs
@@ -87,6 +88,35 @@ def hitung_status(berakhir):
     return ('Aktif', sisa)
 
 
+# ~20 baris UJI notif: sebar di semua zona cadence (H-90..H-0, baru habis, + 1 di luar grace & 1 "stop").
+def make_test_rows():
+    cases = [
+        (88, ''), (75, ''), (66, ''), (58, ''), (45, 'Tidak Diperpanjang'), (33, ''),
+        (28, ''), (20, ''), (12, ''), (9, ''), (7, ''), (5, ''), (3, ''), (1, ''), (0, ''),
+        (-1, ''), (-3, ''), (-7, ''), (-12, ''), (-20, ''),
+    ]
+    out = []
+    for i, (off, tl) in enumerate(cases):
+        berakhir = datetime.datetime.combine(TODAY + datetime.timedelta(days=off), datetime.time())
+        mulai = berakhir - datetime.timedelta(days=365)
+        status, sisa = hitung_status(berakhir)
+        tag = ('H-' + str(off)) if off > 0 else ('HARI-H' if off == 0 else 'habis ' + str(-off) + 'h')
+        m = {
+            'ID Kerjasama': f'K-UJI-{i+1:03d}', 'Timestamp': datetime.datetime.now(),
+            'ID Mitra': '', 'Nama Mitra': f'UJI COBA {i+1:02d} — {tag}', 'Jenis Mitra': 'Uji Coba',
+            'Wilayah/Provinsi': '', 'Nomor Surat': f'UJI/{i+1:03d}',
+            'Bentuk Kerja Sama': 'Perjanjian Kerja sama (PKS)', 'Ruang Lingkup': 'Pendidikan',
+            'Pengguna MoU/PKS': 'Prodi DIII Gizi', 'Jabatan Penandatangan': '',
+            'Biaya (Rp)': 0, 'Masa Berlaku (tahun)': 1, 'Tanggal Mulai': mulai, 'Tanggal Berakhir': berakhir,
+            'Jenis Entri': 'Baru', 'Ref Kerjasama Sebelumnya': '', 'Dokumen Induk (MoU)': '',
+            'Link File MoU/PKS': '', 'Catatan': 'Data uji notif — boleh dihapus',
+            'Tindak Lanjut': tl, 'Status': status, 'Sisa Hari': sisa,
+            'Diinput Oleh': 'uji@contoh.id', 'Reminder Terakhir': '',
+        }
+        out.append([m[h] for h in HEADERS_KERJASAMA])
+    return out
+
+
 def style_header(ws, ncol, tab_color):
     ws.sheet_properties.tabColor = tab_color
     fill = PatternFill('solid', fgColor=INDIGO)
@@ -127,7 +157,7 @@ def beautify_kerjasama(ws):
     style_header(ws, len(HEADERS_KERJASAMA), INK)
     ws.freeze_panes = 'E2'  # header + ID, Timestamp, ID Mitra, Nama Mitra
     set_widths(ws, [12, 18, 10, 34, 22, 22, 18, 26, 30, 30, 22,
-                    14, 12, 14, 14, 12, 16, 26, 30, 24, 16, 10, 24, 18])
+                    14, 12, 14, 14, 12, 16, 26, 30, 24, 20, 16, 10, 24, 18])
     color_status_column(ws, HEADERS_KERJASAMA.index('Status') + 1)
 
 
@@ -186,6 +216,19 @@ def build_template():
     print("[1] Template publik (aman):")
     wb = openpyxl.load_workbook(TEMPLATE)
     ensure_pic(wb['Mitra'])
+    kw = wb['Kerjasama']
+    hdr = [c.value for c in kw[1]]
+    if 'Tindak Lanjut' not in hdr:                       # sisipkan kolom baru setelah "Catatan"
+        pos = hdr.index('Catatan') + 2                   # 1-based, kolom setelah Catatan
+        kw.insert_cols(pos)
+        kw.cell(1, pos).value = 'Tindak Lanjut'
+    # buang baris uji lama (bila regenerasi) lalu tambahkan set baru
+    for r in range(kw.max_row, 1, -1):
+        if str(kw.cell(r, 1).value or '').startswith('K-UJI-'):
+            kw.delete_rows(r)
+    for row in make_test_rows():
+        kw.append(row)
+    print(f"    + {len(make_test_rows())} baris UJI notif ditambahkan")
     finalize(wb, TEMPLATE)
 
 
@@ -222,6 +265,7 @@ def build_real():
             str(r[8] or '').strip(), str(r[6] or '').strip(),
             r[9] if isinstance(r[9], (int, float)) else '', r[10] if isinstance(r[10], (int, float)) else '',
             r[11], berakhir, 'Baru', '', '', '', '',
+            '',  # Tindak Lanjut
             status, sisa, str(r[1] or '').strip(), '',
         ])
     for m in mitra_rows:
@@ -234,6 +278,7 @@ def build_real():
     for m in mitra_rows: wm.append(m)
     wk = wb.create_sheet('Kerjasama'); wk.append(HEADERS_KERJASAMA)
     for k in ks_rows: wk.append(k)
+    for row in make_test_rows(): wk.append(row)   # + ~20 baris UJI notif
     # Dataset diambil dari template supaya konsisten
     wd = wb.create_sheet('Dataset')
     for row in openpyxl.load_workbook(TEMPLATE)['Dataset'].iter_rows(values_only=True):

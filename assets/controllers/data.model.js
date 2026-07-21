@@ -25,7 +25,8 @@
       { key: 'berakhir', label: 'Berakhir', nowrap: true },
       { key: 'sisa', label: 'Sisa', num: true, nowrap: true },
       { key: 'biaya', label: 'Biaya', num: true, nowrap: true, hidden: true },
-      { key: 'status', label: 'Status', filter: 'select' }
+      { key: 'status', label: 'Status', filter: 'select' },
+      { key: 'tindakLanjut', label: 'Tindak Lanjut', filter: 'select', hidden: true }
     ],
 
     // ---- Akses data ----

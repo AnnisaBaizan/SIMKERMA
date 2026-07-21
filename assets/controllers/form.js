@@ -56,13 +56,21 @@ function setMode(m) {
   MODE = m; document.getElementById('modeBaru').classList.toggle('active', m === 'Baru');
   document.getElementById('modePerpanjangan').classList.toggle('active', m === 'Perpanjangan');
   document.getElementById('perpanjanganBox').style.display = m === 'Perpanjangan' ? 'block' : 'none';
+  if (m !== 'Perpanjangan') fillRefKerjasama('');   // reset daftar kerja sama sebelumnya
 }
 function prefillMitra() {
   const id = document.getElementById('mitraSelect').value; const m = (DATA.mitra || []).find(x => x.id === id); if (!m) return;
   document.getElementById('namaMitra').value = m.nama || ''; setSelect('jenisMitra', m.jenis || '');
   document.getElementById('wilayah').value = m.wilayah || ''; document.getElementById('picNama').value = m.picNama || '';
   document.getElementById('picEmail').value = m.picEmail || ''; document.getElementById('picHp').value = m.picHp || '';
-  document.getElementById('mitraSuggest').innerHTML = ''; fillInduk(id);
+  document.getElementById('mitraSuggest').innerHTML = ''; fillInduk(id); fillRefKerjasama(id);
+}
+// Daftar kerja sama milik mitra → pilihan "Kerja Sama yang Diperpanjang" (jadi Ref Kerjasama Sebelumnya).
+function fillRefKerjasama(idMitra) {
+  const s = document.getElementById('refKerjasama'); if (!s) return;
+  const docs = (DATA.dokByMitra || {})[idMitra] || [];
+  s.innerHTML = '<option value="">' + (idMitra ? (docs.length ? '— pilih kerja sama —' : '— mitra ini belum punya kerja sama tercatat —') : '— pilih mitra dulu —') + '</option>';
+  docs.forEach(d => { const o = document.createElement('option'); o.value = d.id; o.textContent = (d.bentuk || 'Dokumen') + ' — ' + (d.nomor || d.id); s.appendChild(o); });
 }
 function fillInduk(idMitra) {
   const s = document.getElementById('dokumenInduk'); s.innerHTML = '<option value="">— tidak ada / dokumen ini berdiri sendiri —</option>';
@@ -157,6 +165,8 @@ async function loadEditRecord(id) {
     }
     fillInduk(k.idMitra); if (k.dokumenInduk) { const s = document.getElementById('dokumenInduk'); if (![...s.options].some(o => o.value === k.dokumenInduk)) { const o = document.createElement('option'); o.value = k.dokumenInduk; o.textContent = k.dokumenInduk; s.appendChild(o); } s.value = k.dokumenInduk; }
     document.getElementById('catatan').value = k.catatan || '';
+    setSelect('tindakLanjut', k.tindakLanjut || '');
+    if (k.jenisEntri === 'Perpanjangan') { fillRefKerjasama(k.idMitra); if (k.refSebelumnya) setSelect('refKerjasama', k.refSebelumnya); }
     SIMKERMA.setSub('Edit Kerja Sama'); document.getElementById('submitBtn').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Perbarui Kerja Sama';
     show('ok', '✏️ <b>Mode edit</b> — mengubah «' + esc(k.namaMitra || '') + '». Ubah seperlunya lalu simpan.');
   } catch (e) { show('err', 'Gagal memuat data edit: ' + esc(e.message)); }
@@ -171,6 +181,9 @@ document.getElementById('form').addEventListener('submit', async (e) => {
   const ruangNew = [...document.getElementById('ruangChips').children].some(c => c.dataset.new && ruangSelected.has(c.dataset.v));
   if (ruang.length === 0) { show('err', 'Pilih minimal satu Ruang Lingkup.'); return; }
   if (!jenisMitra || !bentuk || !pengguna) { show('err', 'Lengkapi Jenis Mitra, Bentuk, dan Pengguna.'); return; }
+  if (MODE === 'Perpanjangan' && !EDIT_ID && !document.getElementById('refKerjasama').value) {
+    show('err', 'Pilih "Kerja Sama yang Diperpanjang". Jika mitra ini belum punya kerja sama tercatat, gunakan mode Baru.'); return;
+  }
   if (!document.getElementById('masaBerlaku').value) { show('err', 'Pilih atau isi Masa Berlaku (tahun).'); return; }
   if (DATA.authRequired && !gate.pw) { gate.prompt('Masukkan kata sandi untuk menyimpan.', () => document.getElementById('form').requestSubmit(), { mandatory: true }); return; }
 
@@ -189,8 +202,9 @@ document.getElementById('form').addEventListener('submit', async (e) => {
     jabatan: document.getElementById('jabatan').value.trim(), biaya: biayaValue(),
     masaBerlaku: document.getElementById('masaBerlaku').value, tanggalMulai: document.getElementById('tanggalMulai').value,
     tanggalBerakhir: document.getElementById('tanggalBerakhir').value,
-    refSebelumnya: MODE === 'Perpanjangan' ? document.getElementById('mitraSelect').value : '',
+    refSebelumnya: MODE === 'Perpanjangan' ? document.getElementById('refKerjasama').value : '',
     dokumenInduk: document.getElementById('dokumenInduk').value, catatan: document.getElementById('catatan').value.trim(),
+    tindakLanjut: document.getElementById('tindakLanjut').value,
     password: gate.pw, editId: EDIT_ID, file
   };
 
