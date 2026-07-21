@@ -56,7 +56,11 @@
       '</div></div>' +
       '<nav class="nav">' + links + '</nav>' +
       '<div class="actions" id="page-actions"></div>' +
+      '<button class="btn-logout" id="logoutBtn" title="Keluar admin" style="display:none"><i class="fa-solid fa-right-from-bracket"></i> Keluar</button>' +
       '</div>';
+    var lo = document.getElementById('logoutBtn');
+    if (lo) lo.onclick = function () { S.gate.clear(); location.reload(); };
+    S.gate._syncUI();
   };
   S.setSub = function (t) { var e = document.getElementById('appsub'); if (e && t) e.textContent = t; };
   S.setActions = function (html) { var e = document.getElementById('page-actions'); if (e) e.innerHTML = html; };
@@ -105,7 +109,7 @@
       function submit() {
         var v = inp.value.trim(); if (!v) { msg.textContent = 'Kata sandi belum diisi'; return; }
         self.pw = v; try { localStorage.setItem('simkerma_auth', JSON.stringify({ pw: v, exp: Date.now() + SESI_MS })); } catch (e) { }
-        inp.value = ''; self.close();
+        inp.value = ''; self.close(); self._syncUI();
         var cb = self._cb; self._cb = null; if (cb) cb();
       }
       m.querySelector('.gok').onclick = submit;
@@ -132,7 +136,9 @@
       var inp = this._m.querySelector('.gpw'); setTimeout(function () { inp.focus(); }, 60);
     },
     close: function () { if (this._m) this._m.classList.remove('on'); },
-    clear: function () { this.pw = ''; try { localStorage.removeItem('simkerma_auth'); } catch (e) { } }
+    clear: function () { this.pw = ''; try { localStorage.removeItem('simkerma_auth'); } catch (e) { } this._syncUI(); },
+    // Tampilkan/sembunyikan tombol "Keluar" sesuai ada/tidaknya sesi admin.
+    _syncUI: function () { var b = document.getElementById('logoutBtn'); if (b) b.style.display = this.pw ? '' : 'none'; }
   };
 
   // ---- Pesan inline (butuh elemen #msg) ----

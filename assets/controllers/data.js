@@ -181,7 +181,7 @@
   });
   $('lockLink').addEventListener('click', e => { e.preventDefault(); lockAdmin(); });
   function enterAdmin() { document.body.classList.add('admin'); $('adminbar').classList.add('on'); $('adminBtn').innerHTML = '<i class="fa-solid fa-lock-open"></i> Admin'; render(); }
-  function lockAdmin() { document.body.classList.remove('admin'); $('adminbar').classList.remove('on'); $('adminBtn').innerHTML = '<i class="fa-solid fa-lock"></i> Admin'; M.clearSelect(); render(); }
+  function lockAdmin() { gate.clear(); document.body.classList.remove('admin'); $('adminbar').classList.remove('on'); $('adminBtn').innerHTML = '<i class="fa-solid fa-lock"></i> Admin'; M.clearSelect(); render(); }
 
   async function delRow(id) {
     const k = M.all.find(x => x.id === id); if (!k) return;
