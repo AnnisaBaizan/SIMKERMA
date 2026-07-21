@@ -38,7 +38,8 @@
   var NAV = [
     { k: 'dashboard', label: '<i class="fa-solid fa-gauge-high"></i> Dashboard', href: 'index.html' },
     { k: 'data', label: '<i class="fa-solid fa-table-list"></i> Data', href: 'data.html' },
-    { k: 'input', label: '<i class="fa-solid fa-plus"></i> Input', href: 'form.html' }
+    { k: 'input', label: '<i class="fa-solid fa-plus"></i> Input', href: 'form.html' },
+    { k: 'pengaturan', label: '<i class="fa-solid fa-gear"></i>', href: 'pengaturan.html' }
   ];
   S.header = function (active, opts) {
     opts = opts || {};

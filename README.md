@@ -323,6 +323,7 @@ Rahasia (`ADMIN_PASSWORD`, `WA_TOKEN`) tetap di `CONFIG` Code.gs, **bukan** di P
 - `getDashboard` → seluruh agregasi insight
 - `getKerjasama` → daftar kerja sama (tabel & prefill edit)
 - `getPublicConfig` → konfigurasi publik ringan (mis. `surveyAktif`)
+- `getPengaturan` → semua pengaturan untuk halaman **Pengaturan** (tanpa rahasia)
 - `ping` → cek koneksi
 
 **`POST { action }`** (★ = wajib `password` bila `ADMIN_PASSWORD` diisi)

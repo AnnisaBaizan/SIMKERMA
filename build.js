@@ -27,7 +27,7 @@ const inject = (s) => s
   .replaceAll('__RATING_OVERRIDE_PASSWORD__', RATING_OVERRIDE_PASSWORD);
 
 // 1) Halaman HTML (root dist) — dengan injeksi env
-['index.html', 'form.html', 'data.html'].forEach(file => {
+['index.html', 'form.html', 'data.html', 'pengaturan.html'].forEach(file => {
   const src = path.join(SRC, file);
   if (!fs.existsSync(src)) return;
   fs.writeFileSync(path.join(DIST, file), inject(fs.readFileSync(src, 'utf8')), 'utf8');
@@ -45,7 +45,7 @@ const inject = (s) => s
 // 2b) Controller per-halaman (dist/assets/controllers)
 const DIST_CTRL = path.join(DIST_ASSETS, 'controllers');
 fs.mkdirSync(DIST_CTRL, { recursive: true });
-['dashboard.js', 'form.js', 'data.model.js', 'data.js'].forEach(file => {
+['dashboard.js', 'form.js', 'data.model.js', 'data.js', 'pengaturan.js'].forEach(file => {
   const src = path.join(SRC, 'assets', 'controllers', file);
   if (!fs.existsSync(src)) return;
   fs.writeFileSync(path.join(DIST_CTRL, file), inject(fs.readFileSync(src, 'utf8')), 'utf8');

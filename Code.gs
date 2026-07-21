@@ -203,6 +203,7 @@ function doGet(e) {
     else if (action === 'getDashboard') result = getDashboard();
     else if (action === 'getKerjasama') result = { data: _listKerjasama() };
     else if (action === 'getPublicConfig') result = getPublicConfig();
+    else if (action === 'getPengaturan') result = getPengaturan();
     else if (action === 'ping')         result = { status: 'ok', time: new Date().toISOString() };
     else result = { error: 'Action tidak dikenal: ' + action };
   } catch (err) {
@@ -219,7 +220,7 @@ function doPost(e) {
   const action = payload.action || '';
   let result;
   try {
-    const perluAuth = ['submitKerjasama', 'deleteKerjasama', 'tambahDataset', 'updatePengaturan'];
+    const perluAuth = ['submitKerjasama', 'deleteKerjasama', 'tambahDataset', 'updatePengaturan', 'runReminder'];
     if (perluAuth.indexOf(action) > -1 && !_authOk(payload)) {
       result = { status: 'error', error: 'Kata sandi salah.', auth: true };
     }
@@ -564,6 +565,15 @@ function getFormData() {
 // Konfigurasi publik ringan untuk frontend (mis. toggle survei) — tanpa data sensitif.
 function getPublicConfig() {
   return { surveyAktif: !!_settings().SURVEY_AKTIF };
+}
+
+// Semua pengaturan (untuk halaman UI Pengaturan). Rahasia (ADMIN_PASSWORD/WA_TOKEN) TIDAK termasuk (ada di CONFIG).
+function getPengaturan() {
+  const s = _settings(), ket = _settingKeterangan(), def = _defaultSettings();
+  return {
+    authRequired: String(CONFIG.ADMIN_PASSWORD || '') !== '',
+    items: Object.keys(def).map(k => ({ key: k, value: s[k], keterangan: ket[k] || '', type: typeof def[k] })),
+  };
 }
 
 // ==================== LIST & DASHBOARD ====================
