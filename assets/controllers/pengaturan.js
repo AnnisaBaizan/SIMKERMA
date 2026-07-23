@@ -10,10 +10,21 @@
   var GROUPS = [
     { t: 'Umum', icon: 'fa-building', keys: ['NAMA_INSTANSI', 'EMAIL_NOTIF', 'BASE_URL'] },
     { t: 'Jadwal Pengingat', icon: 'fa-calendar-day', keys: ['REMINDER_CADENCE', 'GRACE_HABIS_HARI'] },
-    { t: 'Notifikasi Internal (tim)', icon: 'fa-users', keys: ['EMAIL_AKTIF', 'WA_NOMOR_AKTIF', 'WA_TARGET', 'WA_GRUP_AKTIF', 'WA_GRUP_ID', 'LAMPIRKAN_FILE'] },
-    { t: 'Notifikasi Eksternal (mitra)', icon: 'fa-paper-plane', keys: ['EMAIL_EKSTERNAL_AKTIF', 'WA_EKSTERNAL_AKTIF', 'WA_EKSTERNAL_MAKS_PER_HARI', 'WA_EKSTERNAL_JEDA_DETIK'] },
+    { t: 'Notifikasi Internal (tim)', icon: 'fa-users', keys: ['EMAIL_AKTIF', 'WA_NOMOR_AKTIF', 'WA_TARGET', 'WA_GRUP_AKTIF', 'WA_GRUP_ID', 'LAMPIRKAN_FILE'],
+      note: '<b>WhatsApp memakai Fonnte</b> (layanan pihak ketiga). Token <code>WA_TOKEN</code> diisi di <code>Code.gs</code> (server), bukan di sheet. Kirim ke <b>grup</b> lebih hemat kuota daripada per-nomor.' },
+    { t: 'Notifikasi Eksternal (mitra)', icon: 'fa-paper-plane', keys: ['EMAIL_EKSTERNAL_AKTIF', 'WA_EKSTERNAL_AKTIF', 'WA_EKSTERNAL_MAKS_PER_HARI', 'WA_EKSTERNAL_JEDA_DETIK'],
+      warn: '<b>⚠️ Perhatian — WhatsApp ke mitra via Fonnte (pihak ketiga):</b>' +
+        '<ul style="margin:6px 0 0 18px;padding:0;line-height:1.6">' +
+        '<li>Pesan dikirim lewat <b>server Fonnte</b> — data pesan melewati layanan pihak ketiga.</li>' +
+        '<li>Nomor pengirim bisa <b>diblokir WhatsApp</b> bila mengirim ke banyak nomor tak dikenal / terkesan spam. <b>Hindari blast.</b></li>' +
+        '<li>Kuota paket Fonnte terbatas (mis. ~1.000 pesan/tahun) — <b>kirim ke grup lebih hemat</b>.</li>' +
+        '<li>Batasi <b>jumlah/hari</b> &amp; beri <b>jeda antar-kirim</b> (kolom di bawah) agar nomor aman.</li>' +
+        '<li>Untuk mitra, <b>email lebih aman</b> daripada WA. Nyalakan WA eksternal hanya bila benar-benar perlu.</li>' +
+        '</ul>' },
     { t: 'Antarmuka', icon: 'fa-sliders', keys: ['SURVEY_AKTIF'] }
   ];
+  // Pengaturan berisiko (WA eksternal) → ditandai merah.
+  var DANGER = { WA_EKSTERNAL_AKTIF: 1, WA_EKSTERNAL_MAKS_PER_HARI: 1, WA_EKSTERNAL_JEDA_DETIK: 1 };
 
   function msg(type, html) {
     var m = document.getElementById('msg');
@@ -23,13 +34,14 @@
 
   function fieldHtml(it) {
     var id = 'pg_' + it.key, hint = it.keterangan ? '<div class="hint">' + esc(it.keterangan) + '</div>' : '';
+    var dg = DANGER[it.key] ? ' pg-danger' : '';
     if (it.type === 'boolean') {
       var on = (it.value === true || String(it.value).toUpperCase() === 'TRUE');
-      return '<label class="pg-row"><input type="checkbox" id="' + id + '" data-key="' + it.key + '" data-type="boolean"' +
+      return '<label class="pg-row' + dg + '"><input type="checkbox" id="' + id + '" data-key="' + it.key + '" data-type="boolean"' +
         (on ? ' checked' : '') + ' style="width:auto"> <span><b>' + esc(it.key) + '</b>' + hint + '</span></label>';
     }
     var t = it.type === 'number' ? 'number' : 'text';
-    return '<label><b>' + esc(it.key) + '</b>' + hint +
+    return '<label class="pgfield' + dg + '"><b>' + esc(it.key) + '</b>' + hint +
       '<input type="' + t + '" id="' + id + '" data-key="' + it.key + '" data-type="' + it.type + '" value="' + esc(it.value == null ? '' : it.value) + '"></label>';
   }
 
@@ -38,7 +50,11 @@
     var seen = {}, html = '';
     GROUPS.forEach(function (g) {
       var rows = g.keys.filter(function (k) { return byKey[k]; }).map(function (k) { seen[k] = 1; return fieldHtml(byKey[k]); }).join('');
-      if (rows) html += '<div class="card"><p class="section-title"><i class="fa-solid ' + g.icon + '"></i> ' + g.t + '</p>' + rows + '</div>';
+      if (!rows) return;
+      html += '<div class="card' + (g.warn ? ' pg-card-danger' : '') + '"><p class="section-title"><i class="fa-solid ' + g.icon + '"></i> ' + g.t + '</p>' +
+        (g.note ? '<div class="pg-note">' + g.note + '</div>' : '') +
+        (g.warn ? '<div class="pg-warn">' + g.warn + '</div>' : '') +
+        rows + '</div>';
     });
     var rest = items.filter(function (it) { return !seen[it.key]; }).map(fieldHtml).join('');
     if (rest) html += '<div class="card"><p class="section-title"><i class="fa-solid fa-gear"></i> Lainnya</p>' + rest + '</div>';

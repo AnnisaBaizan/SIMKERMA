@@ -91,8 +91,9 @@ const clip = (s, n) => { s = String(s); return s.length > n ? s.slice(0, n - 1) 
 function barChart(id, obj, opts) {
   opts = opts || {}; destroy(id);
   const keys = Object.keys(obj || {}), vals = keys.map(k => obj[k]), h = !!opts.horizontal;
-  const disp = h ? keys.map(k => clip(k, 26)) : keys;
-  const valAxis = { beginAtZero: true, ticks: { precision: 0, callback: v => v + (opts.suffix || '') }, grid: { color: '#f1f2f6' } };
+  const suf = opts.suffix || '';                       // suffix = satuan KATEGORI (mis. ' th'), bukan jumlah
+  const disp = (h ? keys.map(k => clip(k, 26)) : keys).map(k => k + suf);
+  const valAxis = { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#f1f2f6' } };
   const catAxis = { ticks: { autoSkip: false, font: { size: 11 } }, grid: { display: false } };
   charts[id] = new Chart(document.getElementById(id), {
     type: opts.line ? 'line' : 'bar',
@@ -106,7 +107,7 @@ function barChart(id, obj, opts) {
     },
     options: {
       responsive: true, maintainAspectRatio: false, indexAxis: h ? 'y' : 'x',
-      plugins: { legend: { display: false }, tooltip: { callbacks: { title: it => keys[it[0].dataIndex] } } },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { title: it => keys[it[0].dataIndex] + suf } } },
       scales: h ? { x: valAxis, y: catAxis } : { y: valAxis, x: catAxis }
     }
   });

@@ -1498,3 +1498,13 @@ mark {
 /* ===== Tombol Keluar (logout admin) di header ===== */
 .btn-logout{margin-left:10px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:background var(--tr),border-color var(--tr)}
 .btn-logout:hover{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.6)}
+
+/* ===== Pengaturan: catatan/peringatan & field berisiko (WA/Fonnte) ===== */
+.pg-note{background:#eef2ff;border:1px solid #c7d2fe;color:#3730a3;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.55;margin-bottom:12px}
+.pg-note code{background:#e0e7ff;padding:1px 5px;border-radius:4px}
+.pg-warn{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.55;margin-bottom:12px}
+.pg-warn code{background:#fee2e2;padding:1px 5px;border-radius:4px}
+.pg-card-danger{border-color:#fecaca;box-shadow:0 0 0 1px #fecaca inset}
+.pgfield.pg-danger,.pg-row.pg-danger{background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px 12px;margin:8px 0}
+.pgfield.pg-danger>b,.pg-row.pg-danger b{color:#b91c1c}
+.pgfield.pg-danger input{border-color:#fca5a5}
