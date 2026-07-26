@@ -703,8 +703,11 @@ function _intervalFor(sisa, zones, grace) {
   for (let i = 0; i < zones.length; i++) { if (sisa <= zones[i].th) return zones[i].iv; }
   return 0;                                              // masih di luar zona reminder terjauh
 }
-// Tanggal terakhir diingatkan dari sel (format baru 'yyyy-MM-dd'; toleran format lama).
+// Tanggal terakhir diingatkan dari sel. PENTING: Google Sheets sering meng-otomatis-ubah
+// string 'yyyy-MM-dd' menjadi objek Date, jadi tangani Date DULU (kalau tidak, dedup cadence gagal
+// → reminder terkirim tiap hari). Toleran juga terhadap teks 'yyyy-MM-dd' (format lama).
 function _lastRemindDate(cell) {
+  if (cell instanceof Date && !isNaN(cell.getTime())) return new Date(cell.getFullYear(), cell.getMonth(), cell.getDate());
   const m = String(cell || '').match(/(\d{4})-(\d{2})-(\d{2})/);
   return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
 }
