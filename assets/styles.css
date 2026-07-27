@@ -1508,3 +1508,7 @@ mark {
 .pgfield.pg-danger,.pg-row.pg-danger{background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px 12px;margin:8px 0}
 .pgfield.pg-danger>b,.pg-row.pg-danger b{color:#b91c1c}
 .pgfield.pg-danger input{border-color:#fca5a5}
+
+/* ===== Tombol aksi "Perpanjang" di tabel Perlu Tindak Lanjut ===== */
+.tl-act{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:var(--accent-d);border:1px solid #c7d2fe;border-radius:8px;padding:6px 11px;font-size:12.5px;font-weight:600;text-decoration:none;white-space:nowrap;transition:background var(--tr),border-color var(--tr)}
+.tl-act:hover{background:#e0e7ff;border-color:var(--accent)}

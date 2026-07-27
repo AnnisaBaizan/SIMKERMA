@@ -34,6 +34,18 @@
     }
   };
 
+  // ---- Konfigurasi publik (cache ~6 jam): { surveyAktif, authRequired } ----
+  S.authRequired = false;
+  S.pubCfg = function (cb) {
+    var TTL = 6 * 60 * 60 * 1000, now = Date.now();
+    try { var c = JSON.parse(localStorage.getItem('simkerma_pubcfg') || 'null'); if (c && c.exp > now) { cb(c); return; } } catch (e) { }
+    S.api.get('getPublicConfig').then(function (r) {
+      var v = { surveyAktif: !!(r && r.surveyAktif), authRequired: !!(r && r.authRequired), exp: now + TTL };
+      try { localStorage.setItem('simkerma_pubcfg', JSON.stringify(v)); } catch (e) { }
+      cb(v);
+    }).catch(function () { cb({ surveyAktif: false, authRequired: false, exp: 0 }); });
+  };
+
   // ---- Header / navigasi (komponen) ----
   var NAV = [
     { k: 'dashboard', label: '<i class="fa-solid fa-gauge-high"></i> Dashboard', href: 'index.html' },
@@ -56,11 +68,15 @@
       '</div></div>' +
       '<nav class="nav">' + links + '</nav>' +
       '<div class="actions" id="page-actions"></div>' +
+      '<button class="btn-logout" id="loginBtn" title="Masuk admin" style="display:none"><i class="fa-solid fa-lock"></i> Masuk Admin</button>' +
       '<button class="btn-logout" id="logoutBtn" title="Keluar admin" style="display:none"><i class="fa-solid fa-right-from-bracket"></i> Keluar</button>' +
       '</div>';
     var lo = document.getElementById('logoutBtn');
     if (lo) lo.onclick = function () { S.gate.clear(); location.reload(); };
+    var li = document.getElementById('loginBtn');
+    if (li) li.onclick = function () { S.gate.prompt('Masuk sebagai admin untuk mengelola data.', function () { location.reload(); }, {}); };
     S.gate._syncUI();
+    S.pubCfg(function (c) { S.authRequired = c.authRequired; S.gate._syncUI(); });
   };
   S.setSub = function (t) { var e = document.getElementById('appsub'); if (e && t) e.textContent = t; };
   S.setActions = function (html) { var e = document.getElementById('page-actions'); if (e) e.innerHTML = html; };
@@ -137,8 +153,11 @@
     },
     close: function () { if (this._m) this._m.classList.remove('on'); },
     clear: function () { this.pw = ''; try { localStorage.removeItem('simkerma_auth'); } catch (e) { } this._syncUI(); },
-    // Tampilkan/sembunyikan tombol "Keluar" sesuai ada/tidaknya sesi admin.
-    _syncUI: function () { var b = document.getElementById('logoutBtn'); if (b) b.style.display = this.pw ? '' : 'none'; }
+    // Tampilkan "Keluar" saat login; "Masuk Admin" saat belum login (bila sandi diperlukan).
+    _syncUI: function () {
+      var lo = document.getElementById('logoutBtn'); if (lo) lo.style.display = this.pw ? '' : 'none';
+      var li = document.getElementById('loginBtn'); if (li) li.style.display = (!this.pw && S.authRequired) ? '' : 'none';
+    }
   };
 
   // ---- Pesan inline (butuh elemen #msg) ----
@@ -251,18 +270,7 @@
       var self = this;
       this._surveyAktif(function (aktif) { if (aktif) self._showOverlay(); });
     },
-    _surveyAktif: function (cb) {
-      var TTL = 6 * 60 * 60 * 1000, now = Date.now();
-      try {
-        var c = JSON.parse(localStorage.getItem('simkerma_pubcfg') || 'null');
-        if (c && c.exp > now) { cb(!!c.surveyAktif); return; }
-      } catch (e) { }
-      S.api.get('getPublicConfig').then(function (r) {
-        var aktif = !!(r && r.surveyAktif);
-        try { localStorage.setItem('simkerma_pubcfg', JSON.stringify({ surveyAktif: aktif, exp: now + TTL })); } catch (e) { }
-        cb(aktif);
-      }).catch(function () { cb(false); }); // gagal ambil config → jangan tampilkan
-    },
+    _surveyAktif: function (cb) { S.pubCfg(function (c) { cb(!!c.surveyAktif); }); },
     _showOverlay: function () {
       var self = this;
       var ov = document.createElement('div'); ov.id = 'survOverlay';

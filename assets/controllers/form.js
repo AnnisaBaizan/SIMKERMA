@@ -24,6 +24,8 @@ async function load() {
     SIMKERMA.searchify(['jenisMitra', 'bentuk', 'pengguna', 'mitraSelect', 'dokumenInduk']);
     const ep = new URLSearchParams(location.search).get('edit');
     if (ep) await loadEditRecord(ep);
+    const pp = new URLSearchParams(location.search).get('perpanjang');
+    if (pp) startPerpanjangan(pp);
     if (DATA.authRequired && !gate.pw) requireLogin();   // wajib login sebelum form tampil
     else revealForm();                                   // tanpa sandi → langsung buka
   } catch (e) { gate.close(); setReady(false); show('err', 'Gagal memuat data: ' + esc(e.message) + '. <a href="#" onclick="location.reload();return false;">Muat ulang</a>'); }
@@ -88,6 +90,18 @@ function checkDup() {
   box.appendChild(document.createTextNode(' — klik untuk pakai data yang ada (hindari mitra ganda).'));
 }
 function useExisting(id) { setMode('Perpanjangan'); document.getElementById('mitraSelect').value = id; prefillMitra(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+// Datang dari dashboard (?perpanjang=<idKerjasama>) → set mode Perpanjangan + pilih mitra & kerja sama sumber.
+function startPerpanjangan(kid) {
+  let mid = ''; const d = DATA.dokByMitra || {};
+  Object.keys(d).forEach(m => { if ((d[m] || []).some(x => String(x.id) === String(kid))) mid = m; });
+  if (!mid) { show('err', 'Kerja sama sumber untuk perpanjangan tidak ditemukan (mungkin sudah terhapus).'); return; }
+  setMode('Perpanjangan');
+  const ms = document.getElementById('mitraSelect'); ms.value = mid; if (ms._ss) ms._ss.refresh();
+  prefillMitra();
+  setSelect('refKerjasama', kid);
+  SIMKERMA.setSub('Perpanjangan Kerja Sama');
+  show('ok', '🔗 <b>Mode perpanjangan</b> — mitra & kerja sama sumber sudah terpilih. Isi nomor surat, tanggal, dan masa berlaku untuk dokumen baru.');
+}
 function setSelect(id, val) { const s = document.getElementById(id); if (val && ![...s.options].some(o => o.value === val)) { const o = document.createElement('option'); o.value = val; o.textContent = val; s.insertBefore(o, s.lastChild); } s.value = val; if (s._ss) s._ss.refresh(); }
 function checkNew(sel, newId) { const box = document.getElementById(newId); if (sel.value === '__NEW__') { box.classList.add('show'); box.required = true; } else { box.classList.remove('show'); box.value = ''; } }
 function hitungBerakhir() {

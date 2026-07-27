@@ -63,15 +63,19 @@ function renderTL() {
   const q = (document.getElementById('filterTL').value || '').toLowerCase();
   const all = [...(DASH.akanBerakhir || []), ...(DASH.sudahHabis || [])];
   const rows = all.filter(k => !q || (String(k.namaMitra) + k.pengguna).toLowerCase().includes(q));
+  const admin = !!SIMKERMA.gate.pw;
   document.getElementById('tlBody').innerHTML = rows.map(k => {
     const b = k.sisa < 0 ? '<span class="badge b-red">Habis ' + Math.abs(k.sisa) + ' hr lalu</span>'
       : k.sisa <= 7 ? '<span class="badge b-red">' + k.sisa + ' hari lagi</span>'
         : k.sisa <= 30 ? '<span class="badge b-amber">' + k.sisa + ' hari lagi</span>'
           : '<span class="badge b-green">' + k.sisa + ' hari lagi</span>';
+    const aksi = admin
+      ? '<a class="tl-act" href="form.html?perpanjang=' + encodeURIComponent(k.id) + '" title="Perpanjang kerja sama ini"><i class="fa-solid fa-arrows-rotate"></i> Perpanjang</a>'
+      : '<span class="muted">—</span>';
     return '<tr><td><b>' + esc(k.namaMitra) + '</b><br><span class="muted">' + esc(k.jenisMitra) + '</span></td>' +
       '<td>' + esc(k.bentuk) + '<br><span class="muted">' + esc(k.nomorSurat) + '</span></td>' +
-      '<td>' + esc(k.pengguna) + '</td><td>' + esc(k.berakhir) + '</td><td>' + b + '</td><td>' + ui.fileLink(k.file) + '</td></tr>';
-  }).join('') || ui.emptyRow(6, 'Tidak ada yang cocok.');
+      '<td>' + esc(k.pengguna) + '</td><td>' + esc(k.berakhir) + '</td><td>' + b + '</td><td>' + ui.fileLink(k.file) + '</td><td>' + aksi + '</td></tr>';
+  }).join('') || ui.emptyRow(7, 'Tidak ada yang cocok.');
   document.getElementById('tlCount').textContent = rows.length + ' kerja sama perlu perhatian.';
 }
 function renderTerlama() {

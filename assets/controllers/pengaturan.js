@@ -90,8 +90,13 @@
     try {
       var r = await api.get('getPengaturan');
       authRequired = !!r.authRequired;
-      render(r.items || []);
-      document.getElementById('pgForm').addEventListener('submit', save);
+      var items = r.items || [];
+      document.getElementById('loading').style.display = 'none';
+      function reveal() { render(items); document.getElementById('pgForm').addEventListener('submit', save); }
+      // Halaman Pengaturan hanya tampil setelah login; jika belum → overlay sandi (wajib).
+      if (authRequired && !gate.pw) {
+        gate.prompt('Masukkan kata sandi untuk membuka Pengaturan.', reveal, { mandatory: true, sub: 'Halaman Pengaturan memerlukan sandi admin.' });
+      } else { reveal(); }
     } catch (e) {
       document.getElementById('loading').innerHTML = '❌ Gagal memuat: ' + esc(e.message);
     }

@@ -577,9 +577,9 @@ function getFormData() {
   };
 }
 
-// Konfigurasi publik ringan untuk frontend (mis. toggle survei) — tanpa data sensitif.
+// Konfigurasi publik ringan untuk frontend (mis. toggle survei, perlu-sandi) — tanpa data sensitif.
 function getPublicConfig() {
-  return { surveyAktif: !!_settings().SURVEY_AKTIF };
+  return { surveyAktif: !!_settings().SURVEY_AKTIF, authRequired: String(CONFIG.ADMIN_PASSWORD || '') !== '' };
 }
 
 // Semua pengaturan (untuk halaman UI Pengaturan). Rahasia (ADMIN_PASSWORD/WA_TOKEN) TIDAK termasuk (ada di CONFIG).
