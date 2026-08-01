@@ -943,16 +943,19 @@ function _kirimWaEksternal(byMitra, map, s) {
 
 // ---------- Util pesan & email ----------
 function _ketSisa(sisa) {
-  return sisa < 0 ? 'SUDAH HABIS (' + Math.abs(sisa) + ' hr lalu)'
-    : sisa === 0 ? 'BERAKHIR HARI INI' : 'sisa ' + sisa + ' hari';
+  if (sisa < 0) return '🔴 SUDAH HABIS (' + Math.abs(sisa) + ' hr lalu)';
+  if (sisa === 0) return '🔴 BERAKHIR HARI INI';
+  if (sisa <= 7) return '🟠 sisa ' + sisa + ' hari';
+  if (sisa <= 30) return '🟡 sisa ' + sisa + ' hari';
+  return '🟢 sisa ' + sisa + ' hari';
 }
 function _emailShell(s, isi) {
   return '<div style="font-family:Arial,sans-serif;max-width:760px;margin:auto">' +
     '<div style="background:#4f46e5;color:#fff;padding:16px 20px;border-radius:8px 8px 0 0">' +
-    '<h2 style="margin:0">Monitoring Masa Berlaku Kerja Sama</h2>' +
-    '<div style="opacity:.9;font-size:13px">' + _esc(s.NAMA_INSTANSI) + '</div></div>' +
+    '<h2 style="margin:0">📋 Monitoring Masa Berlaku Kerja Sama</h2>' +
+    '<div style="opacity:.9;font-size:13px">🏫 ' + _esc(s.NAMA_INSTANSI) + '</div></div>' +
     '<div style="border:1px solid #e5e7eb;border-top:none;padding:20px;border-radius:0 0 8px 8px">' + isi +
-    '<p style="margin-top:18px"><a href="' + s.BASE_URL + '" style="background:#4f46e5;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none">Buka Dashboard</a></p>' +
+    '<p style="margin-top:18px"><a href="' + s.BASE_URL + '" style="background:#4f46e5;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none">📊 Buka Dashboard</a></p>' +
     '<p style="color:#94a3b8;font-size:12px;margin-top:16px">Email otomatis dari Sistem Monitoring Kerja Sama. Mohon tidak membalas email ini.</p>' +
     '</div></div>';
 }
@@ -988,19 +991,24 @@ function _lampiran(items, s) {
   return out.slice(0, 20);
 }
 function _waPesanRekap(items, s) {
-  let p = '*Monitoring Kerja Sama — ' + s.NAMA_INSTANSI + '*\n' + items.length + ' kerja sama perlu perhatian:\n\n';
+  let p = '🔔 *Monitoring Kerja Sama*\n🏫 ' + s.NAMA_INSTANSI + '\n\n' +
+    '📋 *' + items.length + '* kerja sama perlu perhatian:\n\n';
   items.slice(0, 30).forEach((j, i) => {
-    p += (i + 1) + '. ' + j.nama + ' (' + j.bentuk + ')\n   Berakhir ' + j.berakhir + ' — ' + _ketSisa(j.sisa) + '\n';
+    p += (i + 1) + '. *' + j.nama + '*\n' +
+      '   📄 ' + j.bentuk + (j.nomor ? ' — ' + j.nomor : '') + '\n' +
+      '   🗓️ ' + j.berakhir + '  ' + _ketSisa(j.sisa) + '\n\n';
   });
-  return p + '\nBuka dashboard: ' + s.BASE_URL;
+  if (items.length > 30) p += '_… dan ' + (items.length - 30) + ' lainnya._\n\n';
+  return p + '🔗 Buka dashboard: ' + s.BASE_URL;
 }
 function _waPesanMitra(g, c, s) {
-  let p = (c.pic ? 'Yth. ' + c.pic : 'Yth. Bapak/Ibu') + ',\n\n' +
-    'Pengingat dari *' + s.NAMA_INSTANSI + '* untuk kerja sama *' + g.nama + '* yang akan/segera berakhir:\n\n';
+  let p = '🙏 ' + (c.pic ? 'Yth. ' + c.pic : 'Yth. Bapak/Ibu') + ',\n\n' +
+    '🔔 Pengingat dari *' + s.NAMA_INSTANSI + '* untuk kerja sama dengan *' + g.nama + '* yang akan/segera berakhir:\n\n';
   g.items.slice(0, 20).forEach((j, i) => {
-    p += (i + 1) + '. ' + j.bentuk + (j.nomor ? ' (' + j.nomor + ')' : '') + '\n   Berakhir ' + j.berakhir + ' — ' + _ketSisa(j.sisa) + '\n';
+    p += (i + 1) + '. 📄 ' + j.bentuk + (j.nomor ? ' (' + j.nomor + ')' : '') + '\n' +
+      '   🗓️ ' + j.berakhir + '  ' + _ketSisa(j.sisa) + '\n\n';
   });
-  return p + '\nMohon konfirmasi rencana perpanjangan/tindak lanjutnya. Terima kasih.';
+  return p + '🤝 Mohon konfirmasi rencana perpanjangan/tindak lanjutnya. Terima kasih. 🙏';
 }
 
 function _kirimWA(target, pesan) {
